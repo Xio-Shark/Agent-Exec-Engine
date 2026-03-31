@@ -1,0 +1,47 @@
+server:
+  port: 8080
+  read_timeout: 30s
+  write_timeout: 120s
+
+redis:
+  url: redis://localhost:6379
+  pool_size: 10
+
+dag:
+  default_step_timeout: 120s
+  max_parallel_steps: 10
+  checkpoint_interval: 1  # checkpoint after every N steps
+
+sandbox:
+  default_image: python:3.12-slim
+  cpu_quota: 100000       # 1 core
+  memory_limit: 268435456 # 256MB
+  pids_limit: 64
+  timeout: 30s
+  network_mode: none
+  read_only_fs: true
+
+mcp:
+  server_name: agent-exec-engine
+  protocol_version: "2024-11-05"
+
+tools:
+  web_search:
+    api_key: ""
+  file_reader:
+    base_path: .
+  sql_query:
+    dsn: ""
+
+observability:
+  log_level: info
+  otlp_endpoint: localhost:4317
+  metrics_path: /metrics
+
+infra:
+  gateway_url: http://localhost:8081
+  scheduler_url: http://localhost:8080
+
+llm:
+  model: qwen7b
+  timeout: 60s

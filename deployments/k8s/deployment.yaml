@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-exec-engine
+  labels:
+    app: agent-exec-engine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agent-exec-engine
+  template:
+    metadata:
+      labels:
+        app: agent-exec-engine
+    spec:
+      containers:
+        - name: agent-exec-engine
+          image: agent-exec-engine:latest
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: PORT
+              value: "8080"
+            - name: REDIS_URL
+              value: "redis://redis:6379"
+            - name: AI_INFRA_GATEWAY_URL
+              value: "http://ai-inference-gateway:8080"
+            - name: AI_INFRA_SCHEDULER_URL
+              value: "http://ai-job-api-server:8080"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http

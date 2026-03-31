@@ -1,0 +1,22 @@
+# Binaries
+bin/
+
+# Test artifacts
+coverage.out
+coverage.html
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+
+# Runtime
+.tasks/
+.team/
+
+# Sandbox temp
+/tmp/sandbox-*
+.codex-tasks/
