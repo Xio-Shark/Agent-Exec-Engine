@@ -220,15 +220,20 @@ curl http://localhost:8080/healthz
 
 ## 与已有项目的关系
 
-本项目是 AI Infra Platform 的上层扩展：
+本项目是 [AI Infra Platform](https://github.com/Xio-Shark/ai-infra-platform) 的上层扩展，两者通过 HTTP API 松耦合：
 
 ```
 Agent Execution Engine  ← 本项目（Agent 工作流编排层）
+        ↓ HTTP 调用
+AI Infra Platform       ← github.com/Xio-Shark/ai-infra-platform（推理网关 + GPU 调度）
         ↓ 调用
-AI Infra Platform       ← 已有（推理网关 + GPU 调度）
-        ↓ 调用
-推理引擎                ← 已有（vLLM/SGLang + CUDA 算子）
+推理引擎                ← vLLM / SGLang + CUDA 算子
 ```
+
+| 项目 | 职责 | 仓库 |
+|------|------|------|
+| **Agent Exec Engine** | 多步 Agent 工作流编排、DAG 调度、安全沙箱、MCP 工具 | [Xio-Shark/Agent-Exec-Engine](https://github.com/Xio-Shark/Agent-Exec-Engine) |
+| **AI Infra Platform** | GPU 资源感知调度、推理网关、并发压测引擎 | [Xio-Shark/ai-infra-platform](https://github.com/Xio-Shark/ai-infra-platform) |
 
 ## 文档
 
