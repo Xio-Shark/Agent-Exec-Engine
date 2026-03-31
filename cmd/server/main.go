@@ -85,8 +85,9 @@ func main() {
 	prePullCancel()
 	sandboxPool := sandbox.NewPool(cfg.Sandbox.MaxConcurrent, executor)
 
-	// Initialize MCP tool registry
-	registry := mcp.NewRegistry(mcp.WithTracer(tracer))
+	// Initialize MCP tool registry with security guardrail
+	guardrail := mcp.NewGuardrail(mcp.DefaultRules(), logger.Logger, metrics)
+	registry := mcp.NewRegistry(mcp.WithTracer(tracer), mcp.WithGuardrail(guardrail))
 
 	// Register built-in tools
 	codeExec := tools.NewCodeExecTool(sandboxPool)
@@ -98,6 +99,10 @@ func main() {
 	_ = registry.Register(webSearch.Definition(), webSearch.Handle)
 	_ = registry.Register(fileReader.Definition(), fileReader.Handle)
 	_ = registry.Register(sqlQuery.Definition(), sqlQuery.Handle)
+
+	// Register RAG search tool
+	ragSearch := tools.NewRAGSearchTool(cfg.Tools.RAGSearch.QdrantURL, cfg.LLM.BaseURL, cfg.Tools.RAGSearch.EmbedModel)
+	_ = registry.Register(ragSearch.Definition(), ragSearch.Handle)
 
 	// Create MCP server
 	mcpServer := mcp.NewServer(registry, mcp.WithMetrics(metrics))

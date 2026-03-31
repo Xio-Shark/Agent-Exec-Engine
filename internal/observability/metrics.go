@@ -35,6 +35,10 @@ type Metrics struct {
 
 	// Rate limiter metrics
 	RateLimitRejected *prometheus.CounterVec
+
+	// Guardrail metrics
+	GuardrailBlocked *prometheus.CounterVec
+	GuardrailWarned  *prometheus.CounterVec
 }
 
 // NewMetrics registers and returns all Prometheus metrics.
@@ -128,5 +132,15 @@ func NewMetricsWithRegisterer(registerer prometheus.Registerer) *Metrics {
 			Name: "agent_exec_ratelimit_rejected_total",
 			Help: "Total rate-limited tool call rejections",
 		}, []string{"tool_name"}),
+
+		GuardrailBlocked: factory.NewCounterVec(prometheus.CounterOpts{
+			Name: "agent_exec_guardrail_blocked_total",
+			Help: "Total inputs blocked by security guardrail",
+		}, []string{"rule_name", "tool_name"}),
+
+		GuardrailWarned: factory.NewCounterVec(prometheus.CounterOpts{
+			Name: "agent_exec_guardrail_warned_total",
+			Help: "Total security guardrail warnings",
+		}, []string{"rule_name", "tool_name"}),
 	}
 }

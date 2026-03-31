@@ -60,6 +60,7 @@ type ToolsConfig struct {
 	WebSearch  WebSearchConfig  `mapstructure:"web_search"`
 	FileReader FileReaderConfig `mapstructure:"file_reader"`
 	SQLQuery   SQLQueryConfig   `mapstructure:"sql_query"`
+	RAGSearch  RAGSearchConfig  `mapstructure:"rag_search"`
 }
 
 type WebSearchConfig struct {
@@ -72,6 +73,12 @@ type FileReaderConfig struct {
 
 type SQLQueryConfig struct {
 	DSN string `mapstructure:"dsn"`
+}
+
+type RAGSearchConfig struct {
+	QdrantURL  string `mapstructure:"qdrant_url"`
+	Collection string `mapstructure:"collection"`
+	EmbedModel string `mapstructure:"embed_model"`
 }
 
 type ObservabilityConfig struct {
@@ -119,6 +126,8 @@ func Load(configPath string) (*Config, error) {
 	v.SetDefault("mcp.server_name", "agent-exec-engine")
 	v.SetDefault("mcp.protocol_version", "2024-11-05")
 	v.SetDefault("tools.file_reader.base_path", ".")
+	v.SetDefault("tools.rag_search.collection", "default")
+	v.SetDefault("tools.rag_search.embed_model", "bge-base-en-v1.5")
 	v.SetDefault("observability.log_level", "info")
 	v.SetDefault("observability.otlp_endpoint", "localhost:4317")
 	v.SetDefault("observability.metrics_path", "/metrics")
@@ -161,6 +170,7 @@ func Load(configPath string) (*Config, error) {
 	_ = v.BindEnv("tools.web_search.api_key", "TAVILY_API_KEY")
 	_ = v.BindEnv("tools.sql_query.dsn", "DATABASE_URL")
 	_ = v.BindEnv("tools.file_reader.base_path", "WORKSPACE_ROOT")
+	_ = v.BindEnv("tools.rag_search.qdrant_url", "QDRANT_URL")
 
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {

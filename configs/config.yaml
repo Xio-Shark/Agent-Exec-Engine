@@ -32,6 +32,10 @@ tools:
     base_path: .
   sql_query:
     dsn: ""
+  rag_search:
+    qdrant_url: ""             # empty = stub mode (no Qdrant required)
+    collection: default
+    embed_model: bge-base-en-v1.5
 
 observability:
   log_level: info

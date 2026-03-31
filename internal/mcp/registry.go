@@ -16,9 +16,10 @@ type ToolHandler func(ctx context.Context, input map[string]any) (string, error)
 
 // Registry manages tool registration and discovery.
 type Registry struct {
-	mu     sync.RWMutex
-	tools  map[string]*registeredTool
-	tracer *observability.Tracer
+	mu        sync.RWMutex
+	tools     map[string]*registeredTool
+	tracer    *observability.Tracer
+	guardrail *Guardrail
 }
 
 type registeredTool struct {
@@ -33,6 +34,13 @@ type RegistryOption func(*Registry)
 func WithTracer(tracer *observability.Tracer) RegistryOption {
 	return func(r *Registry) {
 		r.tracer = tracer
+	}
+}
+
+// WithGuardrail attaches a security guardrail to the registry call path.
+func WithGuardrail(g *Guardrail) RegistryOption {
+	return func(r *Registry) {
+		r.guardrail = g
 	}
 }
 
@@ -99,6 +107,13 @@ func (r *Registry) Call(ctx context.Context, call types.ToolCall) (types.ToolRes
 		return types.ToolResult{}, NewRPCError(ErrInvalidParams, err.Error())
 	}
 
+	// Guardrail: scan input for security threats
+	if r.guardrail != nil {
+		if err := r.guardrail.ScanInput(call.ToolName, call.Input); err != nil {
+			return types.ToolResult{}, NewRPCError(ErrPermission, err.Error())
+		}
+	}
+
 	output, err := tool.Handler(ctx, call.Input)
 	if err != nil {
 		return types.ToolResult{
@@ -106,6 +121,11 @@ func (r *Registry) Call(ctx context.Context, call types.ToolCall) (types.ToolRes
 			Content:    fmt.Sprintf("tool error: %v", err),
 			IsError:    true,
 		}, nil
+	}
+
+	// Guardrail: scan output for sensitive data
+	if r.guardrail != nil {
+		output = r.guardrail.ScanOutput(call.ToolName, output)
 	}
 
 	return types.ToolResult{
