@@ -1,0 +1,7 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/Xio-Shark/agent-exec-engine/internal/api
+cpu: Apple M4
+BenchmarkWorkflowCreate-10    	  276520	      9998 ns/op	   15592 B/op	     125 allocs/op
+PASS
+ok  	github.com/Xio-Shark/agent-exec-engine/internal/api	3.497s

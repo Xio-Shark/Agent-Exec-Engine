@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,18 +15,17 @@ import (
 	"github.com/Xio-Shark/agent-exec-engine/pkg/types"
 )
 
-func setupTestRouter(t *testing.T) (*WorkflowManager, *mcp.Registry, http.Handler) {
+func setupTestRouter(t testing.TB) (*WorkflowManager, *mcp.Registry, http.Handler) {
 	t.Helper()
 	executors := DefaultExecutors(nil, nil)
 	manager := NewWorkflowManager(executors)
 	registry := mcp.NewRegistry()
-	logger, _ := zap.NewDevelopment()
 
 	router := SetupRouter(RouterConfig{
 		Manager:  manager,
 		Registry: registry,
 		Store:    nil,
-		Logger:   logger,
+		Logger:   zap.NewNop(),
 	})
 	return manager, registry, router
 }
@@ -289,5 +289,25 @@ func TestE2E_LinearWorkflow(t *testing.T) {
 	w = doRequest(router, http.MethodGet, "/api/v1/workflows/"+wfID+"/steps/a", nil)
 	if w.Code != http.StatusOK {
 		t.Fatalf("get step: %d %s", w.Code, w.Body.String())
+	}
+}
+
+func BenchmarkWorkflowCreate(b *testing.B) {
+	_, _, router := setupTestRouter(b)
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		req := CreateWorkflowRequest{
+			Name: fmt.Sprintf("bench-%d", i),
+			Steps: []types.Step{
+				{ID: fmt.Sprintf("step-%d", i), Type: types.StepTypeLLMCall},
+			},
+		}
+
+		w := doRequest(router, http.MethodPost, "/api/v1/workflows", req)
+		if w.Code != http.StatusCreated {
+			b.Fatalf("expected 201, got %d: %s", w.Code, w.Body.String())
+		}
 	}
 }

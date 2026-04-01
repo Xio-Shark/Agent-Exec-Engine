@@ -27,6 +27,10 @@
 - Debug-first note:
   - first full-suite run failed with `internal/sandbox/executor.go: no new variables on left side of :=`
   - fixed by removing the shadowed `started` declaration and reran full validation to green
+- Runtime follow-up:
+  - real `go run ./cmd/server --stdio` startup exposed a tracer bootstrap crash: conflicting OTEL schema URLs (`1.40.0` vs `1.26.0`)
+  - fixed by making service-name resource schemaless and aligning semconv to the current OTEL stack
+  - compose stack now also provisions Jaeger for local OTLP validation instead of leaving trace acceptance implicit
 - Change-scope note:
   - `gitnexus_detect_changes()` is unavailable in-session
   - parent repo currently treats `agent-exec-engine/` as an untracked subtree, so `git diff` cannot provide tracked-file scope; scope was checked manually against the touched file list in this task log

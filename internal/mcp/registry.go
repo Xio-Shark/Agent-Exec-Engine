@@ -63,6 +63,9 @@ func (r *Registry) Register(def types.ToolDefinition, handler ToolHandler) error
 	if _, exists := r.tools[def.Name]; exists {
 		return fmt.Errorf("tool already registered: %s", def.Name)
 	}
+	if handler == nil {
+		return fmt.Errorf("tool handler is required: %s", def.Name)
+	}
 
 	r.tools[def.Name] = &registeredTool{
 		Definition: def,

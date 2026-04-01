@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -49,10 +49,7 @@ func NewTracer(ctx context.Context, serviceName, otlpEndpoint string) (*Tracer, 
 
 	res, err := resource.Merge(
 		resource.Default(),
-		resource.NewWithAttributes(
-			semconv.SchemaURL,
-			semconv.ServiceName(name),
-		),
+		resource.NewSchemaless(semconv.ServiceNameKey.String(name)),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("build otel resource: %w", err)

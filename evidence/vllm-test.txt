@@ -1,0 +1,14 @@
+=== RUN   TestClientChat_UsesDefaultModelAndAuth
+=== PAUSE TestClientChat_UsesDefaultModelAndAuth
+=== RUN   TestClientChat_RetriesServerErrors
+=== PAUSE TestClientChat_RetriesServerErrors
+=== RUN   TestLLMStepExecutor_ExecuteWithToolLoopAndGPU
+=== PAUSE TestLLMStepExecutor_ExecuteWithToolLoopAndGPU
+=== CONT  TestClientChat_UsesDefaultModelAndAuth
+=== CONT  TestLLMStepExecutor_ExecuteWithToolLoopAndGPU
+=== CONT  TestClientChat_RetriesServerErrors
+--- PASS: TestClientChat_UsesDefaultModelAndAuth (0.00s)
+--- PASS: TestLLMStepExecutor_ExecuteWithToolLoopAndGPU (0.00s)
+--- PASS: TestClientChat_RetriesServerErrors (0.30s)
+PASS
+ok  	github.com/Xio-Shark/agent-exec-engine/internal/llm	0.312s

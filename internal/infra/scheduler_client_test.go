@@ -50,9 +50,10 @@ func TestSchedulerClient_RequestGPU(t *testing.T) {
 	}
 }
 
-func TestSchedulerClient_ReleaseGPUUnsupported(t *testing.T) {
+func TestSchedulerClient_ReleaseGPU(t *testing.T) {
 	t.Parallel()
 
+	cancelCalled := false
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/jobs":
@@ -61,8 +62,10 @@ func TestSchedulerClient_ReleaseGPUUnsupported(t *testing.T) {
 		case "/jobs/job-1/schedule":
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{"status":"scheduled"}`))
-		case "/jobs/job-1/release":
-			http.NotFound(w, r)
+		case "/jobs/job-1/cancel":
+			cancelCalled = true
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"status":"cancelled"}`))
 		default:
 			http.NotFound(w, r)
 		}
@@ -73,8 +76,10 @@ func TestSchedulerClient_ReleaseGPUUnsupported(t *testing.T) {
 	if err := client.RequestGPU(context.Background(), "step-a", 1, 0); err != nil {
 		t.Fatalf("RequestGPU() error = %v", err)
 	}
-	err := client.ReleaseGPU(context.Background(), "step-a")
-	if err != ErrReleaseUnsupported {
-		t.Fatalf("ReleaseGPU() error = %v, want %v", err, ErrReleaseUnsupported)
+	if err := client.ReleaseGPU(context.Background(), "step-a"); err != nil {
+		t.Fatalf("ReleaseGPU() error = %v", err)
+	}
+	if !cancelCalled {
+		t.Fatal("expected cancel endpoint to be called")
 	}
 }

@@ -159,6 +159,64 @@ make test
 make build
 ```
 
+## 真实运行证据
+
+2026-03-31 在本机完成了一轮可复验的运行态验收，并在云服务器 A100 上补齐了 P4.4.4 的真实 vLLM 集成测试。证据分别沉淀在 [`evidence/runtime/`](evidence/runtime/)、[`evidence/screenshots/`](evidence/screenshots/) 和 [`evidence/a100/`](evidence/a100/)：
+
+- `docker compose -f deployments/docker-compose.yaml up -d` 成功拉起 `agent-exec-engine + Redis + Prometheus + Grafana + Jaeger`
+- `GET /healthz` 返回 `{"status":"ok","version":"0.1.0"}`
+- Prometheus 抓到 `agent_exec_workflows_total`、`agent_exec_workflow_duration_seconds`、`agent_exec_step_duration_seconds`
+- Jaeger 中可查询到同一条 trace 里的 `workflow.execute -> step.execute`
+- MCP Inspector 通过 `initialize`、`tools/list`、`tools/call` 手测
+- A100 `vLLM` 服务成功加载 `/infra/data/models/models/Qwen2.5-7B-Instruct`
+- `GET /v1/models`、`POST /v1/chat/completions` 与 `go test ./internal/llm -v -tags=vllm -count=1 -timeout=120s` 全部通过
+
+### Benchmark
+
+`BenchmarkWorkflowCreate` 已补齐，最近一次基准结果如下：
+
+```text
+BenchmarkWorkflowCreate-10    	  260830	     11194 ns/op	   15620 B/op	     125 allocs/op
+```
+
+原始输出见 [`evidence/runtime/benchmark.txt`](evidence/runtime/benchmark.txt)。
+
+### A100 / vLLM
+
+2026-03-31 在 `NVIDIA A100-SXM4-80GB` 云服务器上完成了 `PLAN.md` 要求的真实 `-tags=vllm` 验收：
+
+```bash
+export PATH=/usr/local/go/bin:$PATH
+export LLM_BASE_URL=http://127.0.0.1:8000/v1
+export LLM_API_KEY=dummy
+go test ./internal/llm -v -tags=vllm -count=1 -timeout=120s
+```
+
+最近一次结果：
+
+```text
+ok  	github.com/Xio-Shark/agent-exec-engine/internal/llm	0.310s
+```
+
+原始输出见：
+
+- [`evidence/a100/nvidia-smi.txt`](evidence/a100/nvidia-smi.txt)
+- [`evidence/a100/go-version.txt`](evidence/a100/go-version.txt)
+- [`evidence/a100/python-packages.txt`](evidence/a100/python-packages.txt)
+- [`evidence/a100/vllm-models.json`](evidence/a100/vllm-models.json)
+- [`evidence/a100/vllm-chat-smoke.json`](evidence/a100/vllm-chat-smoke.json)
+- [`evidence/a100/vllm-test.txt`](evidence/a100/vllm-test.txt)
+
+### 截图
+
+- Grafana Dashboard: [`evidence/screenshots/grafana-dashboard.png`](evidence/screenshots/grafana-dashboard.png)
+- Jaeger Trace: [`evidence/screenshots/jaeger-trace.png`](evidence/screenshots/jaeger-trace.png)
+- API 响应: [`evidence/screenshots/api-response.png`](evidence/screenshots/api-response.png)
+- Benchmark 输出: [`evidence/screenshots/benchmark.png`](evidence/screenshots/benchmark.png)
+- 全量测试通过: [`evidence/screenshots/go-test.png`](evidence/screenshots/go-test.png)
+
+更完整的验收命令、输出与 A100 真机记录见 [`docs/runtime-evidence.md`](docs/runtime-evidence.md)。
+
 ## API
 
 REST API 基于 [gin](https://github.com/gin-gonic/gin) 框架实现。完整文档见 [docs/api.md](docs/api.md)。
@@ -175,7 +233,7 @@ REST API 基于 [gin](https://github.com/gin-gonic/gin) 框架实现。完整文
 | `DELETE` | `/api/v1/workflows/:id` | 取消工作流 |
 | `GET` | `/api/v1/workflows/:id/steps` | 列出步骤状态 |
 | `GET` | `/api/v1/workflows/:id/steps/:step_id` | 查询单步详情 |
-| `POST` | `/api/v1/tools` | 注册工具 |
+| `POST` | `/api/v1/tools` | 注册声明式动态工具（当前支持 `template` handler） |
 | `GET` | `/api/v1/tools` | 列出所有工具 |
 | `DELETE` | `/api/v1/tools/:name` | 注销工具 |
 
@@ -206,6 +264,8 @@ curl http://localhost:8080/api/v1/tools | jq .
 # 健康检查
 curl http://localhost:8080/healthz
 ```
+
+`POST /api/v1/tools` 现已支持声明式动态注册：请求体必须包含 `handler`，当前仅开放 `type=template` 模式。服务端使用 `text/template` 渲染输入参数并执行 `missingkey=error` 校验，避免“注册成功但运行期才崩”的假能力。
 
 ## 设计决策
 
@@ -247,12 +307,14 @@ AI Infra Platform       ← github.com/Xio-Shark/ai-infra-platform（推理网�
 
 - `infra.gateway_url` 指向 AI Infra 推理网关，`llm.base_url` 默认派生为 `{gateway_url}/v1`
 - `infra.scheduler_url` 指向 AI Infra API Server，用于 GPU 调度预约
+- `ReleaseGPU` 通过 AI Infra 现有的 `POST /jobs/{id}/cancel` 语义释放预约作业，避免悬挂占卡
 - `deployments/docker-compose.yaml` 通过外部网络 `ai-infra-platform-push_default` 接入 AI Infra 服务
 
 ## P6 可观测性约定
 
 - Prometheus 抓取配置位于 `deployments/prometheus.yml`
 - Grafana dashboard JSON 位于 `configs/grafana/agent-exec.json`
+- `docker compose -f deployments/docker-compose.yaml up -d` 同时拉起 Jaeger（`http://localhost:16686`）承接 OTLP Trace
 - 运行 `docker compose -f deployments/docker-compose.yaml up -d` 后，Grafana 自动加载 Dashboard
 
 ## License

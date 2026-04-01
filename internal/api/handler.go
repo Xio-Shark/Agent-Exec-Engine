@@ -42,6 +42,7 @@ type RegisterToolRequest struct {
 	Category    string           `json:"category,omitempty"`
 	Sandboxed   bool             `json:"sandboxed"`
 	RateLimit   int              `json:"rate_limit,omitempty"`
+	Handler     ToolHandlerSpec  `json:"handler"      binding:"required"`
 }
 
 // ToolListResponse wraps the list of registered tools.
@@ -174,6 +175,12 @@ func (h *Handler) RegisterTool(c *gin.Context) {
 		return
 	}
 
+	handler, err := BuildDynamicToolHandler(req.Name, req.Handler)
+	if err != nil {
+		errBadRequest(c, err.Error())
+		return
+	}
+
 	def := types.ToolDefinition{
 		Name:        req.Name,
 		Description: req.Description,
@@ -182,14 +189,7 @@ func (h *Handler) RegisterTool(c *gin.Context) {
 		Sandboxed:   req.Sandboxed,
 		RateLimit:   req.RateLimit,
 	}
-
-	// Register with a stub handler — real handlers are registered internally.
-	stubHandler := func(_ interface{}, _ map[string]any) (string, error) {
-		return `{"status":"not_implemented"}`, nil
-	}
-	_ = stubHandler // placeholder to show intent
-
-	if err := h.registry.Register(def, nil); err != nil {
+	if err := h.registry.Register(def, handler); err != nil {
 		errConflict(c, err.Error())
 		return
 	}

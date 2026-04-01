@@ -20,5 +20,6 @@
   - `go test ./internal/config ./internal/infra ./internal/llm -count=1` ✅
   - `go test ./... -count=1` ✅
   - `docker compose -f deployments/docker-compose.yaml config` ✅
-- Known gap kept explicit:
-  - current AI Infra API still lacks a confirmed public GPU release endpoint; `ReleaseGPU` returns `ErrReleaseUnsupported` when the endpoint is absent
+- Follow-up closeout:
+  - `ReleaseGPU` 已切换为 `POST /jobs/{id}/cancel`
+  - 对端 AI Infra cancel 路径已补齐 scheduled GPU 释放，原 `ErrReleaseUnsupported` 叙述已失效

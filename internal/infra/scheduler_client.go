@@ -12,8 +12,6 @@ import (
 	"time"
 )
 
-var ErrReleaseUnsupported = fmt.Errorf("scheduler release endpoint is not supported by the current AI infra API")
-
 // SchedulerClient reserves GPU capacity through the AI Infra Platform API.
 type SchedulerClient struct {
 	baseURL      string
@@ -54,15 +52,12 @@ func (c *SchedulerClient) ReleaseGPU(ctx context.Context, taskID string) error {
 	if !ok {
 		return fmt.Errorf("no GPU reservation found for task %s", taskID)
 	}
-	status, payload, err := c.doJSON(ctx, http.MethodPost, "/jobs/"+jobID+"/release", nil)
+	status, payload, err := c.doJSON(ctx, http.MethodPost, "/jobs/"+jobID+"/cancel", nil)
 	if err != nil {
 		return err
 	}
-	if status == http.StatusNotFound {
-		return ErrReleaseUnsupported
-	}
 	if status < http.StatusOK || status >= http.StatusMultipleChoices {
-		return fmt.Errorf("release reservation %s failed with status %d: %s", jobID, status, payload)
+		return fmt.Errorf("cancel reservation %s failed with status %d: %s", jobID, status, payload)
 	}
 	c.mu.Lock()
 	delete(c.reservations, taskID)

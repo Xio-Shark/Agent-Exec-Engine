@@ -16,10 +16,10 @@ import (
 // WorkflowManager tracks workflow definitions and their running instances.
 type WorkflowManager struct {
 	mu         sync.RWMutex
-	workflows  map[string]*types.Workflow       // workflow ID → definition
-	schedulers map[string]*dag.Scheduler         // run ID → scheduler
-	runs       map[string]*types.WorkflowRun     // run ID → snapshot
-	runIndex   map[string]string                 // workflow ID → latest run ID
+	workflows  map[string]*types.Workflow    // workflow ID → definition
+	schedulers map[string]*dag.Scheduler     // run ID → scheduler
+	runs       map[string]*types.WorkflowRun // run ID → snapshot
+	runIndex   map[string]string             // workflow ID → latest run ID
 	executors  map[types.StepType]dag.StepExecutor
 	opts       []dag.SchedulerOption
 }
@@ -58,13 +58,7 @@ func (m *WorkflowManager) CreateAndRun(ctx context.Context, wf *types.Workflow) 
 	}
 
 	runID := sched.RunID()
-	initialRun := &types.WorkflowRun{
-		ID:         runID,
-		WorkflowID: wf.ID,
-		Status:     types.WorkflowPending,
-		StepStates: makeInitialStates(wf.Steps),
-		StartedAt:  time.Now(),
-	}
+	initialRun := sched.Snapshot()
 
 	m.mu.Lock()
 	m.workflows[wf.ID] = wf
@@ -105,12 +99,15 @@ func (m *WorkflowManager) GetRun(workflowID string) (*types.WorkflowRun, bool) {
 	run := m.runs[runID]
 	m.mu.RUnlock()
 
-	// Try to get a fresh snapshot from the scheduler.
 	m.mu.RLock()
 	sched, schedOK := m.schedulers[runID]
 	m.mu.RUnlock()
 	if schedOK {
-		_ = sched // scheduler's currentRun is private; we rely on async update
+		snapshot := sched.Snapshot()
+		m.mu.Lock()
+		m.runs[runID] = snapshot
+		m.mu.Unlock()
+		return snapshot, true
 	}
 	return run, run != nil
 }
@@ -161,19 +158,6 @@ func (m *WorkflowManager) ListWorkflows() []*types.Workflow {
 		result = append(result, wf)
 	}
 	return result
-}
-
-// -- helpers --
-
-func makeInitialStates(steps []types.Step) map[string]*types.StepState {
-	states := make(map[string]*types.StepState, len(steps))
-	for _, s := range steps {
-		states[s.ID] = &types.StepState{
-			StepID: s.ID,
-			Status: types.StepPending,
-		}
-	}
-	return states
 }
 
 func validateWorkflow(wf *types.Workflow) error {

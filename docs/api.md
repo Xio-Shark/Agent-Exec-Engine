@@ -241,7 +241,7 @@ curl http://localhost:8080/api/v1/workflows/{id}/steps/{step_id}
 
 ### POST /api/v1/tools
 
-动态注册一个新工具。
+注册声明式动态工具。当前服务端仅支持 `template` handler，不支持上传任意代码执行逻辑。
 
 **Request Body:**
 ```json
@@ -258,7 +258,11 @@ curl http://localhost:8080/api/v1/workflows/{id}/steps/{step_id}
   },
   "category": "code",
   "sandboxed": true,
-  "rate_limit": 10
+  "rate_limit": 10,
+  "handler": {
+    "type": "template",
+    "template": "linted: {{.code}}"
+  }
 }
 ```
 
@@ -273,8 +277,15 @@ curl http://localhost:8080/api/v1/workflows/{id}/steps/{step_id}
 ```bash
 curl -X POST http://localhost:8080/api/v1/tools \
   -H 'Content-Type: application/json' \
-  -d '{"name": "test_tool", "description": "A test tool", "input_schema": {"type": "object", "properties": {}}}'
+  -d '{
+    "name": "custom_linter",
+    "description": "Run custom linting rules on Python code",
+    "input_schema": {"type": "object", "properties": {"code": {"type": "string"}}, "required": ["code"]},
+    "handler": {"type": "template", "template": "linted: {{.code}}"}
+  }'
 ```
+
+`handler.template` 使用 Go `text/template` 执行，缺失变量会返回 `400 Bad Request` 或运行期错误，不会静默吞掉参数问题。
 
 ---
 

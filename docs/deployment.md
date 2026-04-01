@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Go 1.22+
+- Go 1.25+
 - Docker 24+（含 Docker Compose v2）
 - Redis 7+（生产环境）
 
@@ -25,6 +25,7 @@ docker compose -f deployments/docker-compose.yaml up -d
 - **Redis** — 端口 6379，Checkpoint 持久化
 - **Prometheus** — 端口 9090，指标采集
 - **Grafana** — 端口 3000，可视化大盘（admin/admin）
+- **Jaeger** — 端口 16686，Trace 查询 UI
 
 ### 3. 启动服务
 
@@ -153,7 +154,7 @@ networks:
 ### GPU 调度
 
 - `infra.scheduler_url` 指向 AI Infra API Server
-- LLMStepExecutor 在执行前自动 `RequestGPU`，执行后 `ReleaseGPU`
+- LLMStepExecutor 在执行前自动 `RequestGPU`，执行后通过 `POST /jobs/{id}/cancel` 释放预约
 
 ---
 
@@ -183,13 +184,15 @@ Dashboard JSON 位于 `configs/grafana/agent-exec.json`，包含 6 个面板：
 
 启动后访问 `http://localhost:3000`，Dashboard 自动导入。
 
-### Trace (OTLP)
+### Trace (OTLP / Jaeger)
 
 配置 OTLP endpoint 后，所有 Span 自动上报：
 - `agent-exec.workflow.run` — 工作流级 Span
 - `agent-exec.step.execute` — 步骤级 Span
 - `agent-exec.tool.call` — 工具调用级 Span
 - `agent-exec.sandbox.execute` — 沙箱执行级 Span
+
+本地 compose 默认把 `OTLP_ENDPOINT` 指向 `jaeger:4317`，可直接在 `http://localhost:16686` 查询 `agent-exec-engine` 服务的 trace。
 
 ---
 
@@ -204,7 +207,7 @@ go run ./cmd/server --stdio
 配合 MCP Inspector 测试：
 
 ```bash
-npx @anthropics/mcp-inspector go run ./cmd/server --stdio
+npx @modelcontextprotocol/inspector --cli -- go run ./cmd/server --stdio
 ```
 
 ---

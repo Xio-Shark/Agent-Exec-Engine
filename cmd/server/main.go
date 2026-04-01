@@ -13,6 +13,7 @@ import (
 
 	"github.com/Xio-Shark/agent-exec-engine/internal/api"
 	"github.com/Xio-Shark/agent-exec-engine/internal/config"
+	"github.com/Xio-Shark/agent-exec-engine/internal/dag"
 	"github.com/Xio-Shark/agent-exec-engine/internal/mcp"
 	"github.com/Xio-Shark/agent-exec-engine/internal/mcp/tools"
 	"github.com/Xio-Shark/agent-exec-engine/internal/observability"
@@ -115,7 +116,16 @@ func main() {
 
 	// Create workflow manager with default executors
 	executors := api.DefaultExecutors(tracer, metrics)
-	manager := api.NewWorkflowManager(executors)
+	schedulerOptions := []dag.SchedulerOption{
+		dag.WithTracer(tracer),
+		dag.WithMetrics(metrics),
+		dag.WithDefaultTimeout(cfg.DAG.DefaultStepTimeout),
+		dag.WithMaxParallelSteps(cfg.DAG.MaxParallelSteps),
+	}
+	if redisStore != nil {
+		schedulerOptions = append(schedulerOptions, dag.WithCheckpointer(dag.NewRedisCheckpointer(redisStore)))
+	}
+	manager := api.NewWorkflowManager(executors, schedulerOptions...)
 
 	// Setup gin router (replaces http.NewServeMux)
 	router := api.SetupRouter(api.RouterConfig{
