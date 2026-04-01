@@ -1,7 +1,6 @@
 package config
 
 import (
-	"os"
 	"testing"
 )
 
@@ -33,12 +32,9 @@ func TestLoad_Defaults(t *testing.T) {
 }
 
 func TestLoad_EnvOverride(t *testing.T) {
-	os.Setenv("PORT", "9090")
-	os.Setenv("REDIS_URL", "redis://custom:6380")
-	os.Setenv("AI_INFRA_GATEWAY_URL", "http://gateway.internal:9091")
-	defer os.Unsetenv("PORT")
-	defer os.Unsetenv("REDIS_URL")
-	defer os.Unsetenv("AI_INFRA_GATEWAY_URL")
+	t.Setenv("PORT", "9090")
+	t.Setenv("REDIS_URL", "redis://custom:6380")
+	t.Setenv("AI_INFRA_GATEWAY_URL", "http://gateway.internal:9091")
 
 	cfg, err := Load("")
 	if err != nil {

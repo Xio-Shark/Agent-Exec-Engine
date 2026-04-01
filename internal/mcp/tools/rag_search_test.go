@@ -39,7 +39,9 @@ func TestRAGSearch_MockEmbeddingAndSearch(t *testing.T) {
 				{"embedding": []float64{0.1, 0.2, 0.3}},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			t.Fatalf("encode embedding response: %v", err)
+		}
 	}))
 	defer embedServer.Close()
 
@@ -62,7 +64,9 @@ func TestRAGSearch_MockEmbeddingAndSearch(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			t.Fatalf("encode qdrant response: %v", err)
+		}
 	}))
 	defer qdrantServer.Close()
 
@@ -85,11 +89,13 @@ func TestRAGSearch_MockEmbeddingAndSearch(t *testing.T) {
 func TestRAGSearch_QdrantError(t *testing.T) {
 	embedServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
+		if err := json.NewEncoder(w).Encode(map[string]any{
 			"data": []map[string]any{
 				{"embedding": []float64{0.1, 0.2}},
 			},
-		})
+		}); err != nil {
+			t.Fatalf("encode embedding response: %v", err)
+		}
 	}))
 	defer embedServer.Close()
 

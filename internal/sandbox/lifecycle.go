@@ -178,7 +178,9 @@ func (e *Executor) collectLogs(ctx context.Context, containerID string) (string,
 	if err != nil {
 		return "", "", fmt.Errorf("read container logs %s: %w", containerID, err)
 	}
-	defer reader.Close()
+	defer func() {
+		_ = reader.Close()
+	}()
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -196,7 +198,9 @@ func (e *Executor) collectOutputFiles(ctx context.Context, containerID string) (
 		}
 		return nil, fmt.Errorf("copy output from container %s: %w", containerID, err)
 	}
-	defer reader.Close()
+	defer func() {
+		_ = reader.Close()
+	}()
 
 	files, err := extractOutputArchive(reader)
 	if err != nil {

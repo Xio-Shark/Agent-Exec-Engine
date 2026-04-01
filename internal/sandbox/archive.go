@@ -112,7 +112,7 @@ func extractOutputArchive(reader io.Reader) (map[string][]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("read output archive: %w", err)
 		}
-		if header.Typeflag != tar.TypeReg && header.Typeflag != tar.TypeRegA {
+		if header.Typeflag != tar.TypeReg {
 			continue
 		}
 

@@ -184,6 +184,6 @@ func TestScheduler_CancelMarksRunningSteps(t *testing.T) {
 	}
 	run := scheduler.currentRun()
 	if run.StepStates["slow"].Status != types.StepCancelled {
-		t.Fatalf("expected slow step cancelled, got %s", run.StepStates["slow"].Status)
+		t.Fatalf("expected slow step canceled, got %s", run.StepStates["slow"].Status)
 	}
 }

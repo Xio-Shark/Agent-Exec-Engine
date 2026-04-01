@@ -28,7 +28,7 @@ func TestLLMStepExecutor_ExecuteWithToolLoopAndGPU(t *testing.T) {
 			}
 		}
 
-		response := ChatResponse{}
+		var response ChatResponse
 		if !hasToolResult {
 			response = ChatResponse{
 				Choices: []Choice{{
@@ -64,7 +64,11 @@ func TestLLMStepExecutor_ExecuteWithToolLoopAndGPU(t *testing.T) {
 		Description: "echo value",
 		InputSchema: types.ToolSchema{Type: "object"},
 	}, func(ctx context.Context, input map[string]any) (string, error) {
-		return input["value"].(string), nil
+		value, ok := input["value"].(string)
+		if !ok {
+			return "", nil
+		}
+		return value, nil
 	}); err != nil {
 		t.Fatalf("Register() error = %v", err)
 	}

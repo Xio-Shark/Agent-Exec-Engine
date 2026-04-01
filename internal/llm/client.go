@@ -84,7 +84,9 @@ func (c *Client) doChat(ctx context.Context, body []byte) (*ChatResponse, error)
 	if err != nil {
 		return nil, fmt.Errorf("chat request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	payload, err := io.ReadAll(resp.Body)
 	if err != nil {

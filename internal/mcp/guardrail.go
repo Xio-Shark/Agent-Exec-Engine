@@ -23,7 +23,7 @@ const (
 type Target int
 
 const (
-	TargetInput  Target = iota
+	TargetInput Target = iota
 	TargetOutput
 	TargetBoth
 )

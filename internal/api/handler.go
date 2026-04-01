@@ -131,7 +131,7 @@ func (h *Handler) CancelWorkflow(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "workflow cancelled"})
+	c.JSON(http.StatusOK, gin.H{"message": "workflow canceled"})
 }
 
 // ListSteps handles GET /api/v1/workflows/:id/steps.

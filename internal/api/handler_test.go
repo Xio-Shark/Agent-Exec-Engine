@@ -33,13 +33,22 @@ func setupTestRouter(t testing.TB) (*WorkflowManager, *mcp.Registry, http.Handle
 func doRequest(handler http.Handler, method, path string, body any) *httptest.ResponseRecorder {
 	var buf bytes.Buffer
 	if body != nil {
-		json.NewEncoder(&buf).Encode(body)
+		if err := json.NewEncoder(&buf).Encode(body); err != nil {
+			panic(err)
+		}
 	}
 	req := httptest.NewRequest(method, path, &buf)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 	return w
+}
+
+func decodeJSONResponse(t testing.TB, recorder *httptest.ResponseRecorder, target any) {
+	t.Helper()
+	if err := json.Unmarshal(recorder.Body.Bytes(), target); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
 }
 
 // --- Health & Metrics ---
@@ -52,7 +61,7 @@ func TestHealthz(t *testing.T) {
 	}
 
 	var resp map[string]string
-	json.Unmarshal(w.Body.Bytes(), &resp)
+	decodeJSONResponse(t, w, &resp)
 	if resp["status"] != "ok" {
 		t.Errorf("expected status ok, got %s", resp["status"])
 	}
@@ -147,7 +156,7 @@ func TestCreateAndGetWorkflow(t *testing.T) {
 	}
 
 	var createResp WorkflowRunResponse
-	json.Unmarshal(w.Body.Bytes(), &createResp)
+	decodeJSONResponse(t, w, &createResp)
 	workflowID := createResp.Run.WorkflowID
 
 	// Wait a bit for async execution
@@ -201,7 +210,7 @@ func TestListTools(t *testing.T) {
 	}
 
 	var resp ToolListResponse
-	json.Unmarshal(w.Body.Bytes(), &resp)
+	decodeJSONResponse(t, w, &resp)
 	// Should be empty since no tools registered in test setup
 	if resp.Tools == nil {
 		t.Error("expected non-nil tools list")
@@ -261,7 +270,7 @@ func TestE2E_LinearWorkflow(t *testing.T) {
 	}
 
 	var createResp WorkflowRunResponse
-	json.Unmarshal(w.Body.Bytes(), &createResp)
+	decodeJSONResponse(t, w, &createResp)
 	wfID := createResp.Run.WorkflowID
 
 	// 2. Wait for async execution to complete
@@ -280,7 +289,7 @@ func TestE2E_LinearWorkflow(t *testing.T) {
 	}
 
 	var stepsResp StepListResponse
-	json.Unmarshal(w.Body.Bytes(), &stepsResp)
+	decodeJSONResponse(t, w, &stepsResp)
 	if len(stepsResp.Steps) != 3 {
 		t.Errorf("expected 3 steps, got %d", len(stepsResp.Steps))
 	}

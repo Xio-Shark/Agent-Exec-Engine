@@ -22,11 +22,22 @@ func TestSchedulerClient_RequestGPU(t *testing.T) {
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				t.Fatalf("decode request: %v", err)
 			}
-			resourceSpec := payload["resource_spec"].(map[string]any)
-			if got := int(resourceSpec["gpu"].(float64)); got != 2 {
+			resourceSpec, ok := payload["resource_spec"].(map[string]any)
+			if !ok {
+				t.Fatalf("resource_spec has unexpected type %T", payload["resource_spec"])
+			}
+			gpuValue, ok := resourceSpec["gpu"].(float64)
+			if !ok {
+				t.Fatalf("gpu has unexpected type %T", resourceSpec["gpu"])
+			}
+			if got := int(gpuValue); got != 2 {
 				t.Fatalf("gpu = %d, want 2", got)
 			}
-			if got := resourceSpec["gpu_memory"].(string); got != "8192Mi" {
+			gpuMemory, ok := resourceSpec["gpu_memory"].(string)
+			if !ok {
+				t.Fatalf("gpu_memory has unexpected type %T", resourceSpec["gpu_memory"])
+			}
+			if got := gpuMemory; got != "8192Mi" {
 				t.Fatalf("gpu_memory = %s, want 8192Mi", got)
 			}
 			w.WriteHeader(http.StatusCreated)
@@ -65,7 +76,7 @@ func TestSchedulerClient_ReleaseGPU(t *testing.T) {
 		case "/jobs/job-1/cancel":
 			cancelCalled = true
 			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{"status":"cancelled"}`))
+			_, _ = w.Write([]byte(`{"status":"canceled"}`))
 		default:
 			http.NotFound(w, r)
 		}

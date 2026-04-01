@@ -37,7 +37,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to create logger: %v", err)
 	}
-	defer logger.Sync()
+	defer func() {
+		_ = logger.Sync()
+	}()
 
 	metrics := observability.NewMetrics()
 
@@ -50,8 +52,8 @@ func main() {
 	defer func() {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		if err := tracer.Shutdown(shutdownCtx); err != nil {
-			logger.Warn(fmt.Sprintf("tracer shutdown failed: %v", err))
+		if shutdownErr := tracer.Shutdown(shutdownCtx); shutdownErr != nil {
+			logger.Warn(fmt.Sprintf("tracer shutdown failed: %v", shutdownErr))
 		}
 	}()
 
@@ -67,7 +69,9 @@ func main() {
 		logger.Warn(fmt.Sprintf("redis not available (non-fatal): %v", err))
 	} else {
 		redisStore = rs
-		defer rs.Close()
+		defer func() {
+			_ = rs.Close()
+		}()
 		logger.Info("redis connected")
 	}
 
@@ -164,7 +168,9 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	executor.Cleanup(ctx)
+	if cleanupErr := executor.Cleanup(ctx); cleanupErr != nil {
+		logger.Warn(fmt.Sprintf("sandbox cleanup failed: %v", cleanupErr))
+	}
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Fatal(fmt.Sprintf("server shutdown error: %v", err))
 	}

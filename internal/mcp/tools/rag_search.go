@@ -122,7 +122,9 @@ func (t *RAGSearchTool) getEmbedding(ctx context.Context, text string) ([]float6
 	if err != nil {
 		return nil, fmt.Errorf("call embedding API: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -148,8 +150,8 @@ func (t *RAGSearchTool) getEmbedding(ctx context.Context, text string) ([]float6
 
 func (t *RAGSearchTool) searchQdrant(ctx context.Context, collection string, vector []float64, topK int) ([]searchResult, error) {
 	reqBody, err := json.Marshal(map[string]any{
-		"vector":     vector,
-		"limit":      topK,
+		"vector":       vector,
+		"limit":        topK,
 		"with_payload": true,
 	})
 	if err != nil {
@@ -170,7 +172,9 @@ func (t *RAGSearchTool) searchQdrant(ctx context.Context, collection string, vec
 	if err != nil {
 		return nil, fmt.Errorf("call qdrant: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

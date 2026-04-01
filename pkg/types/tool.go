@@ -9,8 +9,8 @@ type ToolSchema struct {
 
 // Property describes a single input property.
 type Property struct {
-	Type        string `json:"type"`
-	Description string `json:"description,omitempty"`
+	Type        string   `json:"type"`
+	Description string   `json:"description,omitempty"`
 	Enum        []string `json:"enum,omitempty"`
 }
 
@@ -19,9 +19,9 @@ type ToolDefinition struct {
 	Name        string     `json:"name"`
 	Description string     `json:"description"`
 	InputSchema ToolSchema `json:"input_schema"`
-	Category    string     `json:"category,omitempty"`    // e.g. "code", "search", "data"
-	Sandboxed   bool       `json:"sandboxed"`             // whether to run in sandbox
-	RateLimit   int        `json:"rate_limit,omitempty"`  // calls per minute, 0 = unlimited
+	Category    string     `json:"category,omitempty"`   // e.g. "code", "search", "data"
+	Sandboxed   bool       `json:"sandboxed"`            // whether to run in sandbox
+	RateLimit   int        `json:"rate_limit,omitempty"` // calls per minute, 0 = unlimited
 }
 
 // ToolCall represents a single tool invocation.

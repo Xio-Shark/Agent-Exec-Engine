@@ -49,8 +49,8 @@ func TestServer_ListTools(t *testing.T) {
 		t.Fatalf("expected no error, got %+v", response.Error)
 	}
 
-	result := response.Result.(map[string]any)
-	toolsList := result["tools"].([]any)
+	result := mustMap(t, response.Result)
+	toolsList := mustSlice(t, result["tools"])
 	if len(toolsList) != 2 {
 		t.Fatalf("expected 2 tools, got %d", len(toolsList))
 	}
@@ -66,13 +66,13 @@ func TestServer_CallTool_Success(t *testing.T) {
 		t.Fatalf("expected no error, got %+v", response.Error)
 	}
 
-	result := response.Result.(map[string]any)
+	result := mustMap(t, response.Result)
 	if result["isError"] != false {
 		t.Fatalf("expected isError=false, got %v", result["isError"])
 	}
 
-	content := result["content"].([]any)
-	first := content[0].(map[string]any)
+	content := mustSlice(t, result["content"])
+	first := mustMap(t, content[0])
 	if first["text"] != "hello" {
 		t.Fatalf("unexpected content: %v", first["text"])
 	}
@@ -211,7 +211,11 @@ func mustRegisterEchoTool(t *testing.T, registry *Registry) {
 			Required: []string{"message"},
 		},
 	}, func(ctx context.Context, input map[string]any) (string, error) {
-		return input["message"].(string), nil
+		message, ok := input["message"].(string)
+		if !ok {
+			return "", nil
+		}
+		return message, nil
 	})
 }
 
@@ -278,4 +282,22 @@ func hasLabels(metric *dto.Metric, labels map[string]string) bool {
 		}
 	}
 	return true
+}
+
+func mustMap(t testing.TB, value any) map[string]any {
+	t.Helper()
+	result, ok := value.(map[string]any)
+	if !ok {
+		t.Fatalf("expected map[string]any, got %T", value)
+	}
+	return result
+}
+
+func mustSlice(t testing.TB, value any) []any {
+	t.Helper()
+	result, ok := value.([]any)
+	if !ok {
+		t.Fatalf("expected []any, got %T", value)
+	}
+	return result
 }

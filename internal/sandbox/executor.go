@@ -112,7 +112,9 @@ func NewExecutor(opts ...ExecutorOption) (*Executor, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dockerPingTimeout)
 	defer cancel()
 	if _, err := cli.Ping(ctx); err != nil {
-		cli.Close()
+		if closeErr := cli.Close(); closeErr != nil {
+			return nil, errors.Join(fmt.Errorf("ping docker daemon: %w", err), fmt.Errorf("close docker client: %w", closeErr))
+		}
 		return nil, fmt.Errorf("ping docker daemon: %w", err)
 	}
 
@@ -148,11 +150,13 @@ func (e *Executor) Execute(ctx context.Context, req ExecutionRequest) (_ *Execut
 		retErr = errors.Join(retErr, e.removeContainer(containerID))
 	}()
 
-	if err := e.copyInputFiles(ctx, containerID, req.Files); err != nil {
-		return nil, err
+	copyErr := e.copyInputFiles(ctx, containerID, req.Files)
+	if copyErr != nil {
+		return nil, copyErr
 	}
-	if err := e.dockerCli.ContainerStart(ctx, containerID, container.StartOptions{}); err != nil {
-		return nil, fmt.Errorf("start container %s: %w", containerID, err)
+	startErr := e.dockerCli.ContainerStart(ctx, containerID, container.StartOptions{})
+	if startErr != nil {
+		return nil, fmt.Errorf("start container %s: %w", containerID, startErr)
 	}
 
 	exitCode, timedOut, err := e.waitForCompletion(ctx, containerID, policy.Timeout)

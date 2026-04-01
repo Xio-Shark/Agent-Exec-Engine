@@ -29,7 +29,7 @@ func (c *Client) ChatStream(ctx context.Context, req ChatRequest) (<-chan Stream
 	}
 	if httpResp.StatusCode < http.StatusOK || httpResp.StatusCode >= http.StatusMultipleChoices {
 		body, _ := io.ReadAll(httpResp.Body)
-		httpResp.Body.Close()
+		_ = httpResp.Body.Close()
 		cancel()
 		return nil, fmt.Errorf("stream request failed with status %d: %s", httpResp.StatusCode, strings.TrimSpace(string(body)))
 	}
@@ -62,7 +62,9 @@ func (c *Client) openStreamRequest(ctx context.Context, payload []byte) (*http.R
 
 func (c *Client) consumeStream(body io.ReadCloser, cancel context.CancelFunc, out chan<- StreamChunk) {
 	defer cancel()
-	defer body.Close()
+	defer func() {
+		_ = body.Close()
+	}()
 	defer close(out)
 
 	scanner := bufio.NewScanner(body)

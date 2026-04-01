@@ -56,7 +56,9 @@ func (t *SQLQueryTool) Handle(ctx context.Context, input map[string]any) (string
 	if err != nil {
 		return "", fmt.Errorf("open database: %w", err)
 	}
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 
 	queryCtx, cancel := context.WithTimeout(ctx, sqlQueryTimeout)
 	defer cancel()
@@ -65,20 +67,25 @@ func (t *SQLQueryTool) Handle(ctx context.Context, input map[string]any) (string
 	if err != nil {
 		return "", fmt.Errorf("begin read-only transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		_ = tx.Rollback()
+	}()
 
 	rows, err := tx.QueryContext(queryCtx, statement)
 	if err != nil {
 		return "", fmt.Errorf("query database: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close()
+	}()
 
 	records, err := scanRows(rows)
 	if err != nil {
 		return "", err
 	}
-	if err := tx.Commit(); err != nil {
-		return "", fmt.Errorf("commit read-only transaction: %w", err)
+	commitErr := tx.Commit()
+	if commitErr != nil {
+		return "", fmt.Errorf("commit read-only transaction: %w", commitErr)
 	}
 
 	payload, err := json.Marshal(records)

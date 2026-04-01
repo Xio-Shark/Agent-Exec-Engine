@@ -128,7 +128,9 @@ func (c *SchedulerClient) doJSON(ctx context.Context, method, path string, body 
 	if err != nil {
 		return 0, nil, fmt.Errorf("scheduler request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {

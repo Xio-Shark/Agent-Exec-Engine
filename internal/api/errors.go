@@ -35,18 +35,3 @@ func errConflict(c *gin.Context, msg string) {
 		Message: msg,
 	})
 }
-
-func errNotImplemented(c *gin.Context, msg string) {
-	c.JSON(http.StatusNotImplemented, ErrorResponse{
-		Code:    http.StatusNotImplemented,
-		Message: msg,
-	})
-}
-
-func errInternal(c *gin.Context, msg, details string) {
-	c.JSON(http.StatusInternalServerError, ErrorResponse{
-		Code:    http.StatusInternalServerError,
-		Message: msg,
-		Details: details,
-	})
-}

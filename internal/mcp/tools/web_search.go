@@ -76,7 +76,9 @@ func (t *WebSearchTool) Handle(ctx context.Context, input map[string]any) (strin
 	if err != nil {
 		return "", fmt.Errorf("call tavily: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {

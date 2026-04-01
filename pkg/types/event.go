@@ -27,11 +27,11 @@ const (
 
 // Event represents a lifecycle event in the execution engine.
 type Event struct {
-	Type       EventType      `json:"type"`
-	Timestamp  time.Time      `json:"timestamp"`
-	RunID      string         `json:"run_id,omitempty"`
-	StepID     string         `json:"step_id,omitempty"`
-	ToolName   string         `json:"tool_name,omitempty"`
-	Message    string         `json:"message,omitempty"`
-	Metadata   map[string]any `json:"metadata,omitempty"`
+	Type      EventType      `json:"type"`
+	Timestamp time.Time      `json:"timestamp"`
+	RunID     string         `json:"run_id,omitempty"`
+	StepID    string         `json:"step_id,omitempty"`
+	ToolName  string         `json:"tool_name,omitempty"`
+	Message   string         `json:"message,omitempty"`
+	Metadata  map[string]any `json:"metadata,omitempty"`
 }

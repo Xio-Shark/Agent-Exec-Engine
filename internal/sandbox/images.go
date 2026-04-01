@@ -32,7 +32,7 @@ func (e *Executor) PrePullImages(ctx context.Context, images []string) error {
 			return fmt.Errorf("pull image %s: %w", imageRef, err)
 		}
 		if _, err := io.Copy(io.Discard, reader); err != nil {
-			reader.Close()
+			_ = reader.Close()
 			return fmt.Errorf("drain image pull %s: %w", imageRef, err)
 		}
 		if err := reader.Close(); err != nil {

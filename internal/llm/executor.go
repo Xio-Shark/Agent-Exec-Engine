@@ -54,8 +54,9 @@ func (e *LLMStepExecutor) Execute(ctx context.Context, step *types.Step, input m
 	ctx, span := e.startSpan(ctx, step)
 	defer span.End()
 
-	if err := e.reserveGPU(ctx, step); err != nil {
-		return "", err
+	reserveErr := e.reserveGPU(ctx, step)
+	if reserveErr != nil {
+		return "", reserveErr
 	}
 	defer func() {
 		releaseErr := e.releaseGPU(ctx, step)
