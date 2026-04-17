@@ -198,5 +198,6 @@ func DefaultExecutors(
 		types.StepTypeLLMCall:  noop,
 		types.StepTypeToolCall: noop,
 		types.StepTypeParallel: noop,
+		types.StepTypeReAct:    noop,
 	}
 }

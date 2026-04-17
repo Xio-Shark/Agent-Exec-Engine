@@ -1,6 +1,0 @@
-id,task,status,acceptance_criteria,validation_command,completed_at,retry_count,notes
-1,Create task log and capture repo constraints,DONE,Task files exist with repo probe risk and test plan,test -f .codex-tasks/20260331-p5-ai-infra-integration/SPEC.md,2026-03-31T03:43:00+08:00,0,Recorded missing HOOK/STANDARDS and unavailable GitNexus MCP
-2,Implement config and AI Infra client modules,DONE,Config supports infra endpoints and HTTP clients compile,go test ./internal/config ./internal/infra ./internal/llm -count=1,2026-03-31T03:43:00+08:00,0,Added infra config llm client and scheduler client
-3,Implement LLM executor GPU handshake,DONE,LLM executor requests and releases GPU with tests,go test ./internal/llm -count=1,2026-03-31T03:43:00+08:00,0,Implemented GPU allocator hook around LLM execution
-4,Update deployment manifests for AI Infra integration,DONE,Compose and k8s manifests exist and parse,docker compose -f deployments/docker-compose.yaml config >/tmp/agent-exec-compose.out,2026-03-31T03:43:00+08:00,0,Added shared network and k8s deployment/service manifests
-5,Run verification and update progress log,DONE,Progress log reflects outcomes and validation status,go test ./... -count=1,2026-03-31T03:43:00+08:00,0,Full test suite passed

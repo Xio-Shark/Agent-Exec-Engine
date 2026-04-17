@@ -14,11 +14,13 @@ import (
 	"github.com/Xio-Shark/agent-exec-engine/internal/api"
 	"github.com/Xio-Shark/agent-exec-engine/internal/config"
 	"github.com/Xio-Shark/agent-exec-engine/internal/dag"
+	"github.com/Xio-Shark/agent-exec-engine/internal/llm"
 	"github.com/Xio-Shark/agent-exec-engine/internal/mcp"
 	"github.com/Xio-Shark/agent-exec-engine/internal/mcp/tools"
 	"github.com/Xio-Shark/agent-exec-engine/internal/observability"
 	"github.com/Xio-Shark/agent-exec-engine/internal/sandbox"
 	"github.com/Xio-Shark/agent-exec-engine/internal/store"
+	"github.com/Xio-Shark/agent-exec-engine/pkg/types"
 )
 
 func main() {
@@ -118,8 +120,16 @@ func main() {
 		return
 	}
 
-	// Create workflow manager with default executors
+	// Create workflow manager with executors (includes ReAct paradigm support)
 	executors := api.DefaultExecutors(tracer, metrics)
+
+	// Wire up real LLM and ReAct executors when LLM is configured
+	if cfg.LLM.BaseURL != "" {
+		llmClient := llm.NewClient(cfg.LLM.BaseURL, cfg.LLM.Model, cfg.LLM.APIKey, cfg.LLM.Timeout)
+		executors[types.StepTypeLLMCall] = llm.NewLLMStepExecutor(llmClient, registry, nil, tracer, metrics)
+		executors[types.StepTypeReAct] = llm.NewReActExecutor(llmClient, registry, tracer, metrics)
+	}
+
 	schedulerOptions := []dag.SchedulerOption{
 		dag.WithTracer(tracer),
 		dag.WithMetrics(metrics),

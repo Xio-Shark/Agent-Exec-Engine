@@ -35,6 +35,7 @@ const (
 	StepTypeHuman    StepType = "human"    // human-in-the-loop approval
 	StepTypeBranch   StepType = "branch"   // conditional routing
 	StepTypeParallel StepType = "parallel" // fan-out sub-steps
+	StepTypeReAct    StepType = "react"    // ReAct (Reason+Act) autonomous loop
 )
 
 // RetryPolicy configures retry behavior for a step.

@@ -82,7 +82,7 @@ go test ./internal/llm -v -tags=vllm -count=1 -timeout=120s
 ## P5 GPU 释放闭环
 
 - `agent-exec-engine` 的 `ReleaseGPU` 已从不存在的 release endpoint 切到 AI Infra 当前实际可用的 `POST /jobs/{id}/cancel`
-- 对端仓 `ai-infra-platform-push` 同步补上了 scheduled job cancel 时的 GPU 释放逻辑
+- 对端仓 `ai-job-orchestrator` 同步补上了 scheduled job cancel 时的 GPU 释放逻辑
 - 相关验证：
 
 ```bash
@@ -94,7 +94,7 @@ go test ./internal/infra -run 'TestSchedulerClient_ReleaseGPU' -count=1
 - 启动命令：
 
 ```bash
-docker network inspect ai-infra-platform-push_default >/dev/null 2>&1 || docker network create ai-infra-platform-push_default
+docker network inspect ai-job-orchestrator_default >/dev/null 2>&1 || docker network create ai-job-orchestrator_default
 docker compose -f deployments/docker-compose.yaml up -d
 ```
 

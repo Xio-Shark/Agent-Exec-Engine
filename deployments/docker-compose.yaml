@@ -68,5 +68,5 @@ volumes:
 
 networks:
   ai-infra:
-    name: ai-infra-platform-push_default
+    name: ai-job-orchestrator_default
     external: true

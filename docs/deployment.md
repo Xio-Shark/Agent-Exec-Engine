@@ -142,7 +142,7 @@ Agent Exec Engine 通过 Docker 网络或 K8s 同 namespace 与 AI Infra Platfor
 networks:
   default:
     external: true
-    name: ai-infra-platform-push_default
+    name: ai-job-orchestrator_default
 ```
 
 ### 推理网关

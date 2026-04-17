@@ -19,7 +19,7 @@
 | Docker | `Docker 29.2.1` / `Docker Compose v5.0.2` |
 | OS | macOS Darwin 25.2.0 (arm64) |
 | 项目 module | `github.com/Xio-Shark/agent-exec-engine` |
-| AI Infra Platform 路径 | `/Users/xioshark/Desktop/career/滕彦翕/项目/ai-infra-platform-push/` |
+| AI Infra Platform 路径 | `/Users/xioshark/Desktop/career/滕彦翕/项目/ai-job-orchestrator/` |
 | AI Infra Platform module | `ai-infra-platform`（go 1.22，服务：api-server/scheduler/worker/notifier/benchctl） |
 
 ## 已有文件清单（骨架已完成）
@@ -611,7 +611,7 @@ go test ./internal/llm/... -v -count=1  # mock 测试
 
 ### P5.1 推理网关对接
 
-**前置条件**：AI Infra Platform 项目（`/Users/xioshark/Desktop/career/滕彦翕/项目/ai-infra-platform-push/`）的推理网关在本地或远程可达。
+**前置条件**：AI Infra Platform 项目（`/Users/xioshark/Desktop/career/滕彦翕/项目/ai-job-orchestrator/`）的推理网关在本地或远程可达。
 
 **修改文件**：`configs/config.yaml`, `internal/llm/client.go`
 

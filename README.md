@@ -1,6 +1,47 @@
 # Agent Workflow Execution Engine
 
-分布式 Agent 工作流执行引擎 — 为 LLM Agent 提供生产级的多步任务编排、安全工具执行与全链路追踪。
+[![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go)](https://go.dev)
+[![Tests](https://img.shields.io/badge/tests-110%20passed-brightgreen)]()
+[![Code](https://img.shields.io/badge/code-9800%2B%20lines-blue)]() 
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+**生产级 LLM Agent 工作流编排引擎** — DAG 调度 · ReAct 推理 · MCP 工具协议 · Docker 安全沙箱 · 全链路追踪
+
+> 独立设计实现，非 LangChain/LangGraph 封装。从 DAG 拓扑排序到 ReAct Thought-Action-Observation 循环，每一层都是原生 Go 实现。
+
+## 为什么做这个项目
+
+现有 Agent 框架（LangChain / CrewAI）在编排层普遍存在三个问题：
+
+1. **步骤依赖不透明** — 线性 chain 或隐式状态传递，无法表达并行/条件分支
+2. **工具调用不安全** — 直接在主进程执行，缺乏资源隔离和超时保护
+3. **故障不可恢复** — 没有 Checkpoint，长任务中断必须从头重跑
+
+本引擎用 DAG 显式建模依赖、Docker 沙箱隔离每次工具调用、Redis Checkpoint 支持断点恢复，解决上述三个痛点。
+
+## 核心亮点
+
+| 能力 | 实现 | 区别于框架封装 |
+|------|------|--------------|
+| **DAG 调度** | Kahn 拓扑排序 + CEL 条件分支 | 非线性 chain，支持并行/条件/循环 |
+| **ReAct 推理** | 原生 Thought→Action→Observation 循环 | 文本级解析，非 OpenAI function-calling 封装 |
+| **MCP 工具协议** | JSON-RPC 2.0 + 动态注册/发现 | 带频率限制 + 输入校验 + 权限守卫 |
+| **安全沙箱** | Docker 短容器 + cgroup 资源硬限 | 网络白名单 + hardkill + 产出收集 |
+| **Checkpoint** | 每步写 Redis，支持断点恢复 | 长任务中断不丢进度 |
+| **上下文工程** | Token-aware 窗口管理（Write/Select/Compress） | 防止长对话溢出，自动降级 |
+| **可观测性** | OTLP Trace + Prometheus + Grafana | 每个 Step 一条 Span，token 级计量 |
+
+## 关键指标
+
+```
+代码规模    9800+ 行 Go（非生成代码）
+测试覆盖    110 个测试函数，覆盖 DAG / LLM / ReAct / Context / MCP / Sandbox / Config / API 全模块
+步骤类型    6 种 — llm_call · tool_call · react · branch · parallel · human
+上下文管理  3 种策略 — Write（滑动窗口）· Select（相关性筛选）· Compress（LLM 摘要）
+工具数量    4 个内置 + 动态注册（code_exec / web_search / file_reader / sql_query）
+Benchmark   260K ops/s @ 11.2μs/op（WorkflowCreate）
+运行验证    本机 Docker 全栈 + A100 真机 vLLM 集成测试
+```
 
 ## 架构概览
 
@@ -71,7 +112,11 @@ agent-exec-engine/
 │   │   ├── tracer.go       # OpenTelemetry Trace
 │   │   ├── metrics.go      # Prometheus Metrics
 │   │   └── logger.go       # 结构化日志
-│   ├── api/                # HTTP API 层
+│   ├── llm/                # LLM 执行器
+│   │   ├── executor.go     # Tool-use 循环执行器
+│   │   ├── react_executor.go # ReAct 推理执行器（Thought→Action→Observation）
+│   │   ├── client.go       # OpenAI 兼容 HTTP 客户端
+│   │   └── executor_test.go
 │   │   ├── handler.go      # 请求处理
 │   │   ├── middleware.go   # 中间件
 │   │   └── router.go       # 路由注册
@@ -108,15 +153,34 @@ agent-exec-engine/
 
 Agent 的多步推理（Plan → Tool Call → Observe → Reflect）建模为 DAG：
 
-- **拓扑排序调度**：自动解析步骤依赖，按顺序执行
+- **Kahn 拓扑排序调度**：自动解析步骤依赖，按顺序 + 并行混合执行
 - **步骤状态机**：`Pending → Running → Success/Failed/Timeout`
-- **条件分支**：基于前序步骤输出的动态路由
+- **CEL 条件分支**：基于前序步骤输出的动态路由
 - **Checkpoint 持久化**：每步完成后写 Redis，支持断点恢复
 - **超时/重试/熔断**：单步超时自动 cancel，可配置重试策略
 
-### 2. 安全沙箱 (`internal/sandbox/`)
+### 2. ReAct 推理引擎 (`internal/llm/react_executor.go`)
 
-Agent 工具调用的隔离执行环境：
+实现 [Yao et al. 2022](https://arxiv.org/abs/2210.03629) 的 ReAct 范式：
+
+- **Thought→Action→Observation 循环**：LLM 输出结构化推理过程，引擎解析并执行工具调用
+- **文本级解析**：直接解析 `Thought: / Action: / Action Input:` 格式，非 OpenAI function-calling 依赖
+- **自动工具路由**：通过 MCP Registry 查找并执行工具，失败观测反馈给 LLM 重推理
+- **轨迹记录**：完整保存每轮 thought/action/observation，支持审计和调试
+- **最大轮次保护**：防止无限循环，超限自动终止并返回已有轨迹
+
+### 3. 上下文工程 (`internal/llm/context.go`)
+
+Token-aware 上下文窗口管理，防止长对话溢出 context window：
+
+- **Write 策略**：滑动窗口，保留系统消息和最近消息，按时间序淘汰最旧消息
+- **Select 策略**：基于关键词重叠度对每条消息评分，保留与当前 query 最相关的消息
+- **Compress 策略**：调用 LLM 将旧消息压缩为单条摘要，释放 token 预算给新内容
+- **自动降级**：Compress 失败时自动回退到 Write 策略，保证可用性
+
+### 4. 安全沙箱 (`internal/sandbox/`)
+
+Agent 工具调用的安全隔离执行环境：
 
 - **Docker 短生命周期容器**：每次工具调用 = 一个容器
 - **cgroup 资源硬限**：CPU / 内存 / 磁盘 / PID 数量
@@ -125,7 +189,7 @@ Agent 工具调用的隔离执行环境：
 - **hardkill 超时**：超时后强制销毁容器
 - **产出收集**：stdout/stderr/文件 → 结构化返回
 
-### 3. MCP Tool Server (`internal/mcp/`)
+### 5. MCP Tool Server (`internal/mcp/`)
 
 实现 Model Context Protocol 服务端：
 
@@ -134,7 +198,7 @@ Agent 工具调用的隔离执行环境：
 - **内置工具**：代码执行、搜索、文件读取、SQL 查询
 - **权限控制**：per-tool 调用频率限制与权限校验
 
-### 4. 可观测性 (`internal/observability/`)
+### 6. 可观测性 (`internal/observability/`)
 
 全链路追踪，复用 OTLP 网关经验：
 
@@ -252,6 +316,16 @@ curl -X POST http://localhost:8080/api/v1/workflows \
     ]
   }'
 
+# 使用 ReAct 推理模式（自动 Thought→Action→Observation 循环）
+curl -X POST http://localhost:8080/api/v1/workflows \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "research-agent",
+    "steps": [
+      {"id": "research", "type": "react", "config": {"prompt": "调研 Go 1.25 的新特性并总结"}}
+    ]
+  }'
+
 # 查询状态
 curl http://localhost:8080/api/v1/workflows/{id}
 
@@ -308,7 +382,7 @@ AI Infra Platform       ← github.com/Xio-Shark/ai-infra-platform（推理网�
 - `infra.gateway_url` 指向 AI Infra 推理网关，`llm.base_url` 默认派生为 `{gateway_url}/v1`
 - `infra.scheduler_url` 指向 AI Infra API Server，用于 GPU 调度预约
 - `ReleaseGPU` 通过 AI Infra 现有的 `POST /jobs/{id}/cancel` 语义释放预约作业，避免悬挂占卡
-- `deployments/docker-compose.yaml` 通过外部网络 `ai-infra-platform-push_default` 接入 AI Infra 服务
+- `deployments/docker-compose.yaml` 通过外部网络 `ai-job-orchestrator_default` 接入 AI Infra 服务
 
 ## P6 可观测性约定
 
