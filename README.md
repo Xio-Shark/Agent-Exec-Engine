@@ -2,7 +2,7 @@
 
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go)](https://go.dev)
 [![Tests](https://img.shields.io/badge/tests-110%20passed-brightgreen)]()
-[![Code](https://img.shields.io/badge/code-9800%2B%20lines-blue)]() 
+[![Code](https://img.shields.io/badge/code-9800%2B%20lines%20(incl.%203200%2B%20tests)-blue)]() 
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 **生产级 LLM Agent 工作流编排引擎** — DAG 调度 · ReAct 推理 · MCP 工具协议 · Docker 安全沙箱 · 全链路追踪
@@ -34,7 +34,7 @@
 ## 关键指标
 
 ```
-代码规模    9800+ 行 Go（非生成代码）
+代码规模    9800+ 行 Go（含 3200+ 行测试）
 测试覆盖    110 个测试函数，覆盖 DAG / LLM / ReAct / Context / MCP / Sandbox / Config / API 全模块
 步骤类型    6 种 — llm_call · tool_call · react · branch · parallel · human
 上下文管理  3 种策略 — Write（滑动窗口）· Select（相关性筛选）· Compress（LLM 摘要）
