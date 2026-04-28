@@ -1,0 +1,39 @@
+{
+  "name": "regression-ambiguous-intent",
+  "metadata": {
+    "source": "agent-eval/T5",
+    "description": "Ambiguous intent handling: clarify -> plan -> execute",
+    "category": "regression"
+  },
+  "steps": [
+    {
+      "id": "clarify",
+      "name": "Clarify user intent",
+      "type": "llm_call",
+      "config": {
+        "prompt": "The user said 'make it better'. List 3 possible interpretations.",
+        "max_tokens": 256
+      }
+    },
+    {
+      "id": "human-confirm",
+      "name": "Wait for human to select interpretation",
+      "type": "human",
+      "depends_on": ["clarify"],
+      "config": {
+        "prompt": "Select the interpretation that best matches your intent",
+        "timeout": "5m"
+      }
+    },
+    {
+      "id": "execute",
+      "name": "Execute selected plan",
+      "type": "llm_call",
+      "depends_on": ["human-confirm"],
+      "config": {
+        "prompt": "Implement the selected improvement",
+        "max_tokens": 256
+      }
+    }
+  ]
+}

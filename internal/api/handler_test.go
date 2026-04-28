@@ -182,6 +182,42 @@ func TestCancelWorkflow_NotFound(t *testing.T) {
 	}
 }
 
+func TestCancelWorkflow_Success(t *testing.T) {
+	_, _, router := setupTestRouter(t)
+
+	// Create a simple workflow and let it complete
+	req := CreateWorkflowRequest{
+		Name: "cancel-test",
+		Steps: []types.Step{
+			{ID: "a", Type: types.StepTypeLLMCall},
+		},
+	}
+
+	w := doRequest(router, http.MethodPost, "/api/v1/workflows", req)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("create failed: %d %s", w.Code, w.Body.String())
+	}
+
+	var createResp WorkflowRunResponse
+	decodeJSONResponse(t, w, &createResp)
+	workflowID := createResp.Run.WorkflowID
+
+	// Wait for completion
+	time.Sleep(100 * time.Millisecond)
+
+	// Cancel should succeed even if workflow already completed
+	w = doRequest(router, http.MethodDelete, "/api/v1/workflows/"+workflowID, nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var body map[string]any
+	decodeJSONResponse(t, w, &body)
+	if body["message"] != "workflow canceled" {
+		t.Fatalf("expected workflow canceled message, got %v", body["message"])
+	}
+}
+
 // --- Steps ---
 
 func TestListSteps_NotFound(t *testing.T) {

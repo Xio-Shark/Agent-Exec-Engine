@@ -1,0 +1,71 @@
+{
+  "name": "cross-project-agent-demo",
+  "metadata": {
+    "description": "Demo: ReAct planning + rag_search retrieval + gateway-backed llm_call + sandbox execution + pause/resume",
+    "scope": "p2-cross-project-demo"
+  },
+  "steps": [
+    {
+      "id": "react-plan",
+      "name": "ReAct 规划检索路径",
+      "type": "react",
+      "config": {
+        "prompt": "You are preparing a cross-project agent demo. Decide what evidence is needed to explain checkpoint and resume in agent-exec-engine. You may use rag_search if needed. Finish with a short retrieval plan.",
+        "system_prompt": "Prefer repository-grounded evidence and keep the final plan to three bullets."
+      }
+    },
+    {
+      "id": "retrieve-evidence",
+      "name": "检索主线知识证据",
+      "type": "tool_call",
+      "tool": "rag_search",
+      "depends_on": ["react-plan"],
+      "config": {
+        "query": "agent workflow checkpoint resume redis human review",
+        "collection": "default",
+        "top_k": 3
+      }
+    },
+    {
+      "id": "gateway-summary",
+      "name": "通过 AI Infra Gateway 生成摘要",
+      "type": "llm_call",
+      "depends_on": ["retrieve-evidence"],
+      "config": {
+        "prompt": "Summarize how the workflow engine uses checkpoint/resume and mention that llm_call requests are routed through the AI Infra gateway.",
+        "max_tokens": 256
+      }
+    },
+    {
+      "id": "sandbox-artifact",
+      "name": "在 Docker 沙箱生成演示产物",
+      "type": "tool_call",
+      "tool": "code_exec",
+      "depends_on": ["gateway-summary"],
+      "config": {
+        "language": "python",
+        "code": "import json\nartifact = {'demo': 'cross-project-agent-demo', 'checks': ['rag_search', 'gateway_llm_call', 'checkpoint_resume'], 'status': 'ready-for-review'}\nprint(json.dumps(artifact))"
+      }
+    },
+    {
+      "id": "human-review",
+      "name": "人工确认跨项目证据",
+      "type": "human",
+      "depends_on": ["sandbox-artifact"],
+      "config": {
+        "prompt": "Cross-project demo artifacts are ready. Approve to continue and generate the final summary.",
+        "timeout": "10m"
+      }
+    },
+    {
+      "id": "final-report",
+      "name": "生成跨项目演示结论",
+      "type": "llm_call",
+      "depends_on": ["human-review"],
+      "config": {
+        "prompt": "Produce a short final report covering ReAct planning, rag_search retrieval, gateway-backed llm_call, sandbox execution, and checkpoint/resume.",
+        "max_tokens": 256
+      }
+    }
+  ]
+}

@@ -271,6 +271,7 @@ func (s *Scheduler) failWorkflow(err error) error {
 	s.mu.Unlock()
 	s.observeWorkflowResult(types.WorkflowFailed)
 	s.emit(types.EventWorkflowFailed, "", err.Error())
+	_ = s.saveCheckpoint() // best-effort checkpoint on failure
 	return err
 }
 

@@ -1,0 +1,16 @@
+{
+  "name": "obs-metrics",
+  "steps": [
+    {
+      "id": "plan",
+      "type": "llm_call"
+    },
+    {
+      "id": "exec",
+      "type": "tool_call",
+      "depends_on": [
+        "plan"
+      ]
+    }
+  ]
+}

@@ -57,10 +57,11 @@ type MCPConfig struct {
 }
 
 type ToolsConfig struct {
-	WebSearch  WebSearchConfig  `mapstructure:"web_search"`
-	FileReader FileReaderConfig `mapstructure:"file_reader"`
-	SQLQuery   SQLQueryConfig   `mapstructure:"sql_query"`
-	RAGSearch  RAGSearchConfig  `mapstructure:"rag_search"`
+	WebSearch   WebSearchConfig   `mapstructure:"web_search"`
+	FileReader  FileReaderConfig  `mapstructure:"file_reader"`
+	SQLQuery    SQLQueryConfig    `mapstructure:"sql_query"`
+	RAGSearch   RAGSearchConfig   `mapstructure:"rag_search"`
+	KnowledgeQA KnowledgeQAConfig `mapstructure:"knowledge_qa"`
 }
 
 type WebSearchConfig struct {
@@ -79,6 +80,10 @@ type RAGSearchConfig struct {
 	QdrantURL  string `mapstructure:"qdrant_url"`
 	Collection string `mapstructure:"collection"`
 	EmbedModel string `mapstructure:"embed_model"`
+}
+
+type KnowledgeQAConfig struct {
+	RAGServiceURL string `mapstructure:"rag_service_url"`
 }
 
 type ObservabilityConfig struct {
@@ -128,6 +133,7 @@ func Load(configPath string) (*Config, error) {
 	v.SetDefault("tools.file_reader.base_path", ".")
 	v.SetDefault("tools.rag_search.collection", "default")
 	v.SetDefault("tools.rag_search.embed_model", "bge-base-en-v1.5")
+	v.SetDefault("tools.knowledge_qa.rag_service_url", "")
 	v.SetDefault("observability.log_level", "info")
 	v.SetDefault("observability.otlp_endpoint", "localhost:4317")
 	v.SetDefault("observability.metrics_path", "/metrics")

@@ -1,16 +1,21 @@
 package api
 
 import (
+	"context"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
+
+	"github.com/Xio-Shark/agent-exec-engine/internal/llm"
 )
 
 const headerRequestID = "X-Request-ID"
 
 // RequestIDMiddleware injects a unique request ID into context and response header.
+// The request ID is propagated downstream via llm.requestIDKey so that LLM client
+// calls (and any other outbound HTTP) carry X-Request-ID automatically (A6).
 func RequestIDMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		reqID := c.GetHeader(headerRequestID)
@@ -19,6 +24,10 @@ func RequestIDMiddleware() gin.HandlerFunc {
 		}
 		c.Set("request_id", reqID)
 		c.Header(headerRequestID, reqID)
+		// Inject into context for downstream LLM client X-Request-ID propagation.
+		c.Request = c.Request.WithContext(
+			context.WithValue(c.Request.Context(), llm.RequestIDKey{}, reqID),
+		)
 		c.Next()
 	}
 }

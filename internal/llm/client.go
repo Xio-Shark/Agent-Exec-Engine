@@ -79,6 +79,10 @@ func (c *Client) doChat(ctx context.Context, body []byte) (*ChatResponse, error)
 	if c.apiKey != "" {
 		req.Header.Set("Authorization", "Bearer "+c.apiKey)
 	}
+	// Propagate X-Request-ID for cross-service tracing (A6).
+	if requestID, ok := ctx.Value(RequestIDKey{}).(string); ok && requestID != "" {
+		req.Header.Set("X-Request-ID", requestID)
+	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -145,3 +149,7 @@ type retryableHTTPError struct {
 func (e *retryableHTTPError) Error() string {
 	return fmt.Sprintf("chat request failed with status %d: %s", e.statusCode, strings.TrimSpace(e.body))
 }
+
+// RequestIDKey is the context key for X-Request-ID propagation (A6).
+// Exported so that API middleware can inject the key into the request context.
+type RequestIDKey struct{}

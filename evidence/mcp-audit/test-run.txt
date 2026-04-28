@@ -1,0 +1,66 @@
+=== RUN   TestGuardrail_BlocksPromptInjection_Ignore
+--- PASS: TestGuardrail_BlocksPromptInjection_Ignore (0.00s)
+=== RUN   TestGuardrail_BlocksPromptInjection_System
+--- PASS: TestGuardrail_BlocksPromptInjection_System (0.00s)
+=== RUN   TestGuardrail_BlocksPromptInjection_Delimiter
+--- PASS: TestGuardrail_BlocksPromptInjection_Delimiter (0.00s)
+=== RUN   TestGuardrail_AllowsNormalInput
+--- PASS: TestGuardrail_AllowsNormalInput (0.00s)
+=== RUN   TestGuardrail_WarnsOnSensitiveOutput
+--- PASS: TestGuardrail_WarnsOnSensitiveOutput (0.00s)
+=== RUN   TestGuardrail_BlocksPathTraversal
+--- PASS: TestGuardrail_BlocksPathTraversal (0.00s)
+=== RUN   TestProtocolConformance_ErrorMatrix
+=== RUN   TestProtocolConformance_ErrorMatrix/parse_error
+=== RUN   TestProtocolConformance_ErrorMatrix/parse_error/http
+=== RUN   TestProtocolConformance_ErrorMatrix/parse_error/stdio
+=== RUN   TestProtocolConformance_ErrorMatrix/invalid_request
+=== RUN   TestProtocolConformance_ErrorMatrix/invalid_request/http
+=== RUN   TestProtocolConformance_ErrorMatrix/invalid_request/stdio
+=== RUN   TestProtocolConformance_ErrorMatrix/method_not_found
+=== RUN   TestProtocolConformance_ErrorMatrix/method_not_found/http
+=== RUN   TestProtocolConformance_ErrorMatrix/method_not_found/stdio
+=== RUN   TestProtocolConformance_ErrorMatrix/invalid_params
+=== RUN   TestProtocolConformance_ErrorMatrix/invalid_params/http
+=== RUN   TestProtocolConformance_ErrorMatrix/invalid_params/stdio
+=== RUN   TestProtocolConformance_ErrorMatrix/empty_batch
+=== RUN   TestProtocolConformance_ErrorMatrix/empty_batch/http
+=== RUN   TestProtocolConformance_ErrorMatrix/empty_batch/stdio
+--- PASS: TestProtocolConformance_ErrorMatrix (0.00s)
+    --- PASS: TestProtocolConformance_ErrorMatrix/parse_error (0.00s)
+        --- PASS: TestProtocolConformance_ErrorMatrix/parse_error/http (0.00s)
+        --- PASS: TestProtocolConformance_ErrorMatrix/parse_error/stdio (0.00s)
+    --- PASS: TestProtocolConformance_ErrorMatrix/invalid_request (0.00s)
+        --- PASS: TestProtocolConformance_ErrorMatrix/invalid_request/http (0.00s)
+        --- PASS: TestProtocolConformance_ErrorMatrix/invalid_request/stdio (0.00s)
+    --- PASS: TestProtocolConformance_ErrorMatrix/method_not_found (0.00s)
+        --- PASS: TestProtocolConformance_ErrorMatrix/method_not_found/http (0.00s)
+        --- PASS: TestProtocolConformance_ErrorMatrix/method_not_found/stdio (0.00s)
+    --- PASS: TestProtocolConformance_ErrorMatrix/invalid_params (0.00s)
+        --- PASS: TestProtocolConformance_ErrorMatrix/invalid_params/http (0.00s)
+        --- PASS: TestProtocolConformance_ErrorMatrix/invalid_params/stdio (0.00s)
+    --- PASS: TestProtocolConformance_ErrorMatrix/empty_batch (0.00s)
+        --- PASS: TestProtocolConformance_ErrorMatrix/empty_batch/http (0.00s)
+        --- PASS: TestProtocolConformance_ErrorMatrix/empty_batch/stdio (0.00s)
+=== RUN   TestProtocolConformance_SupportedMethodsAcrossTransports
+=== RUN   TestProtocolConformance_SupportedMethodsAcrossTransports/http
+=== RUN   TestProtocolConformance_SupportedMethodsAcrossTransports/stdio
+--- PASS: TestProtocolConformance_SupportedMethodsAcrossTransports (0.00s)
+    --- PASS: TestProtocolConformance_SupportedMethodsAcrossTransports/http (0.00s)
+    --- PASS: TestProtocolConformance_SupportedMethodsAcrossTransports/stdio (0.00s)
+=== RUN   TestServer_CallTool_RateLimited
+--- PASS: TestServer_CallTool_RateLimited (0.00s)
+=== RUN   TestServer_CallTool_RateLimitMetrics
+--- PASS: TestServer_CallTool_RateLimitMetrics (0.00s)
+=== RUN   TestServer_ServeStdio_EndToEnd
+--- PASS: TestServer_ServeStdio_EndToEnd (0.00s)
+=== RUN   TestServer_ServeStdio_ParseError
+--- PASS: TestServer_ServeStdio_ParseError (0.00s)
+=== RUN   TestValidator_RequiredFields
+--- PASS: TestValidator_RequiredFields (0.00s)
+=== RUN   TestValidator_TypeMismatch
+--- PASS: TestValidator_TypeMismatch (0.00s)
+=== RUN   TestValidator_EnumMismatch
+--- PASS: TestValidator_EnumMismatch (0.00s)
+PASS
+ok  	github.com/Xio-Shark/agent-exec-engine/internal/mcp	0.266s

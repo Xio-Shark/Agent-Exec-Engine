@@ -1,0 +1,50 @@
+{
+  "name": "regression-error-recovery",
+  "metadata": {
+    "source": "agent-eval/T4",
+    "description": "Error recovery: detect -> diagnose -> fix -> validate",
+    "category": "regression"
+  },
+  "steps": [
+    {
+      "id": "detect",
+      "name": "Detect anomalies in logs",
+      "type": "llm_call",
+      "config": {
+        "prompt": "Analyze these error logs and identify root cause patterns",
+        "max_tokens": 256
+      }
+    },
+    {
+      "id": "diagnose",
+      "name": "Diagnose specific issue",
+      "type": "llm_call",
+      "depends_on": ["detect"],
+      "config": {
+        "prompt": "Pinpoint the exact line/module causing the failure",
+        "max_tokens": 128
+      }
+    },
+    {
+      "id": "fix",
+      "name": "Apply fix via sandbox",
+      "type": "tool_call",
+      "tool": "code_exec",
+      "depends_on": ["diagnose"],
+      "config": {
+        "language": "python",
+        "code": "print('{\"status\": \"fixed\"}')"
+      }
+    },
+    {
+      "id": "validate",
+      "name": "Validate fix",
+      "type": "llm_call",
+      "depends_on": ["fix"],
+      "config": {
+        "prompt": "Confirm the fix resolves the original issue",
+        "max_tokens": 128
+      }
+    }
+  ]
+}

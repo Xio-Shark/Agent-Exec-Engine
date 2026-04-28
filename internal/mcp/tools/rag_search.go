@@ -21,6 +21,9 @@ const (
 	searchTimeout     = 10 * time.Second
 )
 
+// requestIDKey is the context key for X-Request-ID propagation (A6).
+type requestIDKey struct{}
+
 // RAGSearchTool performs semantic search against a Qdrant vector database.
 type RAGSearchTool struct {
 	qdrantURL  string
@@ -117,6 +120,10 @@ func (t *RAGSearchTool) getEmbedding(ctx context.Context, text string) ([]float6
 		return nil, fmt.Errorf("build embedding request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	// Propagate X-Request-ID for cross-service tracing (A6).
+	if requestID, ok := ctx.Value(requestIDKey{}).(string); ok && requestID != "" {
+		req.Header.Set("X-Request-ID", requestID)
+	}
 
 	resp, err := t.httpClient.Do(req)
 	if err != nil {
@@ -167,6 +174,10 @@ func (t *RAGSearchTool) searchQdrant(ctx context.Context, collection string, vec
 		return nil, fmt.Errorf("build qdrant request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	// Propagate X-Request-ID for cross-service tracing (A6).
+	if requestID, ok := ctx.Value(requestIDKey{}).(string); ok && requestID != "" {
+		req.Header.Set("X-Request-ID", requestID)
+	}
 
 	resp, err := t.httpClient.Do(req)
 	if err != nil {

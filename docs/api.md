@@ -370,6 +370,7 @@ curl -X DELETE http://localhost:8080/api/v1/tools/custom_linter
 |------|------|
 | `llm_call` | 调用 LLM 进行推理 |
 | `tool_call` | 调用注册的工具 |
+| `react` | ReAct（Reason + Act）循环，允许 LLM 在步骤内多轮调用工具 |
 | `human` | 人工审批节点（暂停等待 resume） |
 | `branch` | 条件分支（CEL 表达式） |
 | `parallel` | 并行子步骤 |

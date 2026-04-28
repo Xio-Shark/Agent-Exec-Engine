@@ -1,7 +1,7 @@
 # Agent Workflow Execution Engine
 
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go)](https://go.dev)
-[![Tests](https://img.shields.io/badge/tests-110%20passed-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-114%20passed-brightgreen)]()
 [![Code](https://img.shields.io/badge/code-9800%2B%20lines%20(incl.%203200%2B%20tests)-blue)]() 
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -26,7 +26,7 @@
 | **DAG 调度** | Kahn 拓扑排序 + CEL 条件分支 | 非线性 chain，支持并行/条件/循环 |
 | **ReAct 推理** | 原生 Thought→Action→Observation 循环 | 文本级解析，非 OpenAI function-calling 封装 |
 | **MCP 工具协议** | JSON-RPC 2.0 + 动态注册/发现 | 带频率限制 + 输入校验 + 权限守卫 |
-| **安全沙箱** | Docker 短容器 + cgroup 资源硬限 | 网络白名单 + hardkill + 产出收集 |
+| **安全沙箱** | Docker 短容器 + cgroup 资源硬限 | `network=none` 隔离 + hardkill + 产出收集 |
 | **Checkpoint** | 每步写 Redis，支持断点恢复 | 长任务中断不丢进度 |
 | **上下文工程** | Token-aware 窗口管理（Write/Select/Compress） | 防止长对话溢出，自动降级 |
 | **可观测性** | OTLP Trace + Prometheus + Grafana | 每个 Step 一条 Span，token 级计量 |
@@ -35,7 +35,7 @@
 
 ```
 代码规模    9800+ 行 Go（含 3200+ 行测试）
-测试覆盖    110 个测试函数，覆盖 DAG / LLM / ReAct / Context / MCP / Sandbox / Config / API 全模块
+测试覆盖    114 个测试函数，覆盖 DAG / LLM / ReAct / Context / MCP / Sandbox / Config / API 全模块
 步骤类型    6 种 — llm_call · tool_call · react · branch · parallel · human
 上下文管理  3 种策略 — Write（滑动窗口）· Select（相关性筛选）· Compress（LLM 摘要）
 工具数量    4 个内置 + 动态注册（code_exec / web_search / file_reader / sql_query）
@@ -223,6 +223,34 @@ make test
 make build
 ```
 
+## 5 分钟 Demo
+
+如果你只想快速验证「工作流创建 → 调度执行 → 状态查询」这条主链路，不需要先通读全部文档，直接按下面路径走：
+
+更短的 reviewer 路线见 [`docs/reviewer-quickstart.md`](docs/reviewer-quickstart.md)。
+
+```bash
+# 终端 1：拉起依赖
+docker compose -f deployments/docker-compose.yaml up -d
+
+# 终端 2：启动服务
+make run
+
+# 终端 3：执行固定 demo workflow
+make demo-workflow
+```
+
+这条 demo 会使用 [`examples/obs-metrics-workflow.json`](examples/obs-metrics-workflow.json) 创建一个两步工作流，并轮询直到返回最终运行状态。成功时你会看到：
+
+- `GET /healthz` 返回 `{"status":"ok","version":"0.1.0"}`
+- `POST /api/v1/workflows` 返回新的 `workflow_id`
+- `GET /api/v1/workflows/:id` 最终返回 `status=completed`
+
+对应的真实成功样例已保存在：
+
+- [`evidence/runtime/workflow-run.json`](evidence/runtime/workflow-run.json)
+- [`docs/runtime-evidence.md`](docs/runtime-evidence.md)
+
 ## 真实运行证据
 
 2026-03-31 在本机完成了一轮可复验的运行态验收，并在云服务器 A100 上补齐了 P4.4.4 的真实 vLLM 集成测试。证据分别沉淀在 [`evidence/runtime/`](evidence/runtime/)、[`evidence/screenshots/`](evidence/screenshots/) 和 [`evidence/a100/`](evidence/a100/)：
@@ -232,7 +260,7 @@ make build
 - Prometheus 抓到 `agent_exec_workflows_total`、`agent_exec_workflow_duration_seconds`、`agent_exec_step_duration_seconds`
 - Jaeger 中可查询到同一条 trace 里的 `workflow.execute -> step.execute`
 - MCP Inspector 通过 `initialize`、`tools/list`、`tools/call` 手测
-- A100 `vLLM` 服务成功加载 `/infra/data/models/models/Qwen2.5-7B-Instruct`
+- A100 `vLLM` 服务成功加载云服务器路径 `/infra/data/models/models/Qwen2.5-7B-Instruct`
 - `GET /v1/models`、`POST /v1/chat/completions` 与 `go test ./internal/llm -v -tags=vllm -count=1 -timeout=120s` 全部通过
 
 ### Benchmark
@@ -373,9 +401,15 @@ AI Infra Platform       ← github.com/Xio-Shark/ai-infra-platform（推理网�
 
 | 文档 | 说明 |
 |------|------|
+| [docs/reviewer-quickstart.md](docs/reviewer-quickstart.md) | reviewer 最短路径：先跑 demo，再看 runtime / A100 evidence，最后再决定要不要读 `PLAN.md` |
 | [docs/architecture.md](docs/architecture.md) | 架构设计、模块职责、数据流 |
 | [docs/api.md](docs/api.md) | REST API 详细文档，含每个 endpoint 的请求/响应示例 |
+| [docs/cross-project-demo.md](docs/cross-project-demo.md) | 用一条跨项目 demo 串起 ReAct、rag_search、AI Infra gateway、sandbox 和 pause/resume |
+| [docs/cross-project-contracts.md](docs/cross-project-contracts.md) | 固化 Agent -> Infra / RAG / Eval 的接口契约、错误语义、超时与观测边界 |
+| [docs/observability-case-study.md](docs/observability-case-study.md) | 用一条 LLM 5xx failover 路径串起 workflow、metrics、trace 和 infra gateway 排障证据 |
 | [docs/deployment.md](docs/deployment.md) | Docker / K8s 部署指南、环境变量、生产检查清单 |
+| [docs/mcp-design-decision.md](docs/mcp-design-decision.md) | 为什么当前保留薄实现 MCP 服务端、覆盖范围到哪里、现有验证怎么做 |
+| [docs/user-control-design.md](docs/user-control-design.md) | 把 checkpoint / human-in-the-loop / sandbox 映射到控制感、信任与可恢复性 |
 
 ## P5 集成约定
 

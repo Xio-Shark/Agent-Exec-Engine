@@ -1,4 +1,4 @@
-.PHONY: build run test clean deps lint
+.PHONY: build run test clean deps lint demo-workflow
 
 BINARY := agent-exec-engine
 CMD    := ./cmd/server
@@ -8,6 +8,9 @@ build:
 
 run:
 	go run $(CMD)
+
+demo-workflow:
+	bash ./scripts/run_demo_workflow.sh
 
 test:
 	go test ./... -v -race -count=1

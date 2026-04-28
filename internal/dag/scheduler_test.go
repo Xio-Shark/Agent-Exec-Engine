@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Xio-Shark/agent-exec-engine/internal/store"
 	"github.com/Xio-Shark/agent-exec-engine/pkg/types"
 )
 
@@ -185,5 +186,92 @@ func TestScheduler_CancelMarksRunningSteps(t *testing.T) {
 	run := scheduler.currentRun()
 	if run.StepStates["slow"].Status != types.StepCancelled {
 		t.Fatalf("expected slow step canceled, got %s", run.StepStates["slow"].Status)
+	}
+}
+
+func TestScheduler_RetryExhaustedMarksFailed(t *testing.T) {
+	wf := &types.Workflow{
+		ID: "wf",
+		Steps: []types.Step{
+			{
+				ID:    "fragile",
+				Type:  types.StepTypeLLMCall,
+				Retry: &types.RetryPolicy{MaxRetries: 2},
+			},
+		},
+	}
+
+	mem := store.NewMemoryStore()
+	checkpointer := NewRedisCheckpointer(mem)
+	executor := &mockExecutor{
+		errors: map[string][]error{
+			"fragile": {errors.New("err1"), errors.New("err2"), errors.New("err3")},
+		},
+	}
+	scheduler, err := NewScheduler(
+		wf,
+		map[types.StepType]StepExecutor{types.StepTypeLLMCall: executor},
+		WithCheckpointer(checkpointer),
+	)
+	if err != nil {
+		t.Fatalf("new scheduler failed: %v", err)
+	}
+
+	run, err := scheduler.Run(context.Background())
+	if err == nil {
+		t.Fatal("expected error when retries exhausted")
+	}
+	if run.Status != types.WorkflowFailed {
+		t.Fatalf("expected workflow failed, got %s", run.Status)
+	}
+	if run.StepStates["fragile"].Status != types.StepFailed {
+		t.Fatalf("expected step failed, got %s", run.StepStates["fragile"].Status)
+	}
+	if run.StepStates["fragile"].RetryCount != 2 {
+		t.Fatalf("expected retry count 2, got %d", run.StepStates["fragile"].RetryCount)
+	}
+
+	// Verify checkpoint was persisted with failed state
+	cp, err := checkpointer.Load(context.Background(), run.ID)
+	if err != nil {
+		t.Fatalf("load checkpoint failed: %v", err)
+	}
+	if cp.StepStates["fragile"].Status != types.StepFailed {
+		t.Fatalf("expected checkpoint step failed, got %s", cp.StepStates["fragile"].Status)
+	}
+}
+
+func TestScheduler_StepIdempotency(t *testing.T) {
+	wf := &types.Workflow{
+		ID: "wf",
+		Steps: []types.Step{
+			{ID: "a", Type: types.StepTypeLLMCall},
+			{ID: "b", Type: types.StepTypeLLMCall, DependsOn: []string{"a"}},
+		},
+	}
+
+	executor := &mockExecutor{
+		outputs: map[string]string{
+			"a": `{"ok":true}`,
+			"b": `{"done":true}`,
+		},
+	}
+	scheduler, err := NewScheduler(
+		wf,
+		map[types.StepType]StepExecutor{types.StepTypeLLMCall: executor},
+	)
+	if err != nil {
+		t.Fatalf("new scheduler failed: %v", err)
+	}
+
+	if _, err := scheduler.Run(context.Background()); err != nil {
+		t.Fatalf("run failed: %v", err)
+	}
+
+	if executor.calls["a"] != 1 {
+		t.Fatalf("expected step a called exactly once, got %d", executor.calls["a"])
+	}
+	if executor.calls["b"] != 1 {
+		t.Fatalf("expected step b called exactly once, got %d", executor.calls["b"])
 	}
 }

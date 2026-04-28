@@ -1,0 +1,41 @@
+{
+  "name": "regression-rag-knowledge-qa",
+  "metadata": {
+    "source": "rag-eval",
+    "description": "RAG knowledge QA: rag_search -> summarize -> verify",
+    "category": "regression"
+  },
+  "steps": [
+    {
+      "id": "retrieve",
+      "name": "Retrieve evidence from knowledge base",
+      "type": "tool_call",
+      "tool": "rag_search",
+      "config": {
+        "query": "agent workflow checkpoint resume redis",
+        "collection": "default",
+        "top_k": 3
+      }
+    },
+    {
+      "id": "summarize",
+      "name": "Summarize retrieved evidence",
+      "type": "llm_call",
+      "depends_on": ["retrieve"],
+      "config": {
+        "prompt": "Summarize the retrieved evidence about checkpoint/resume",
+        "max_tokens": 256
+      }
+    },
+    {
+      "id": "verify",
+      "name": "Verify answer against sources",
+      "type": "llm_call",
+      "depends_on": ["summarize"],
+      "config": {
+        "prompt": "Does the summary accurately reflect the retrieved evidence?",
+        "max_tokens": 128
+      }
+    }
+  ]
+}

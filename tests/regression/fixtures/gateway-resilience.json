@@ -1,0 +1,40 @@
+{
+  "name": "regression-gateway-resilience",
+  "metadata": {
+    "source": "infra-eval",
+    "description": "Gateway resilience: llm_call -> fallback_check -> report",
+    "category": "regression"
+  },
+  "steps": [
+    {
+      "id": "primary-llm",
+      "name": "Primary LLM call through gateway",
+      "type": "llm_call",
+      "config": {
+        "prompt": "Generate a short summary of distributed systems consensus",
+        "max_tokens": 128
+      }
+    },
+    {
+      "id": "health-check",
+      "name": "Check gateway health status",
+      "type": "tool_call",
+      "tool": "code_exec",
+      "depends_on": ["primary-llm"],
+      "config": {
+        "language": "python",
+        "code": "import json; print(json.dumps({'healthy_backends': 2, 'status': 'ok'}))"
+      }
+    },
+    {
+      "id": "report",
+      "name": "Generate resilience report",
+      "type": "llm_call",
+      "depends_on": ["health-check"],
+      "config": {
+        "prompt": "Report whether the gateway handled the request successfully",
+        "max_tokens": 64
+      }
+    }
+  ]
+}

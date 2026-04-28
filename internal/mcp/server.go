@@ -101,10 +101,7 @@ func (s *Server) handleMessage(ctx context.Context, body []byte) any {
 func (s *Server) handleBatchMessage(ctx context.Context, body []byte) any {
 	var rawRequests []json.RawMessage
 	if err := json.Unmarshal(body, &rawRequests); err != nil {
-		return JSONRPCResponse{
-			JSONRPC: "2.0",
-			Error:   &JSONRPCError{Code: ErrParse, Message: "parse error"},
-		}
+		return s.parseErrorResponse()
 	}
 	if len(rawRequests) == 0 {
 		return s.invalidRequestResponse(nil, "batch request must not be empty")
@@ -125,8 +122,21 @@ func (s *Server) handleBatchMessage(ctx context.Context, body []byte) any {
 }
 
 func (s *Server) handleRequestBytes(ctx context.Context, body []byte) JSONRPCResponse {
+	var payload any
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return s.parseErrorResponse()
+	}
+
+	normalized, err := json.Marshal(payload)
+	if err != nil {
+		return JSONRPCResponse{
+			JSONRPC: "2.0",
+			Error:   &JSONRPCError{Code: ErrInternal, Message: "failed to normalize request"},
+		}
+	}
+
 	var req JSONRPCRequest
-	if err := json.Unmarshal(body, &req); err != nil {
+	if err := json.Unmarshal(normalized, &req); err != nil {
 		return s.invalidRequestResponse(nil, "invalid request")
 	}
 	return s.handleRequest(ctx, req)
@@ -246,6 +256,13 @@ func (s *Server) invalidRequestResponse(id any, message string) JSONRPCResponse 
 		JSONRPC: "2.0",
 		ID:      id,
 		Error:   &JSONRPCError{Code: ErrInvalidRequest, Message: message},
+	}
+}
+
+func (s *Server) parseErrorResponse() JSONRPCResponse {
+	return JSONRPCResponse{
+		JSONRPC: "2.0",
+		Error:   &JSONRPCError{Code: ErrParse, Message: "parse error"},
 	}
 }
 

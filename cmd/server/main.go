@@ -111,6 +111,10 @@ func main() {
 	ragSearch := tools.NewRAGSearchTool(cfg.Tools.RAGSearch.QdrantURL, cfg.LLM.BaseURL, cfg.Tools.RAGSearch.EmbedModel)
 	_ = registry.Register(ragSearch.Definition(), ragSearch.Handle)
 
+	// Register knowledge QA tool (R4: RAG /v1/qa/ask adapter with audit_id)
+	knowledgeQA := tools.NewKnowledgeQATool(cfg.Tools.KnowledgeQA.RAGServiceURL)
+	_ = registry.Register(knowledgeQA.Definition(), knowledgeQA.Handle)
+
 	// Create MCP server
 	mcpServer := mcp.NewServer(registry, mcp.WithMetrics(metrics))
 	if *stdioMode {

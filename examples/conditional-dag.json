@@ -1,0 +1,58 @@
+{
+  "name": "conditional-review-pipeline",
+  "metadata": {
+    "description": "Demo: 条件分支 + Human-in-the-loop 的代码审查流水线"
+  },
+  "steps": [
+    {
+      "id": "analyze",
+      "name": "代码静态分析",
+      "type": "tool_call",
+      "tool": "code_exec",
+      "config": {
+        "language": "python",
+        "code": "import json\nresult = {'severity': 'high', 'issues': ['SQL injection in query builder', 'hardcoded secret key']}\nprint(json.dumps(result))"
+      }
+    },
+    {
+      "id": "branch-severity",
+      "name": "严重性判断",
+      "type": "branch",
+      "depends_on": ["analyze"],
+      "condition": "steps.analyze.output.contains('high')"
+    },
+    {
+      "id": "human-review",
+      "name": "人工审批（高危）",
+      "type": "human",
+      "depends_on": ["branch-severity"],
+      "condition": "steps.analyze.output.contains('high')",
+      "config": {
+        "prompt": "检测到高危问题，请确认是否继续修复",
+        "timeout": "5m"
+      }
+    },
+    {
+      "id": "auto-fix",
+      "name": "自动修复（低危）",
+      "type": "tool_call",
+      "tool": "code_exec",
+      "depends_on": ["branch-severity"],
+      "condition": "!steps.analyze.output.contains('high')",
+      "config": {
+        "language": "python",
+        "code": "print('Auto-fix applied: formatted code, removed unused imports')"
+      }
+    },
+    {
+      "id": "generate-report",
+      "name": "生成审查报告",
+      "type": "llm_call",
+      "depends_on": ["human-review", "auto-fix"],
+      "config": {
+        "prompt": "Summarize the code review findings and actions taken.",
+        "max_tokens": 256
+      }
+    }
+  ]
+}

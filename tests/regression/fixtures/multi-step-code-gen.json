@@ -1,0 +1,40 @@
+{
+  "name": "regression-multi-step-code-gen",
+  "metadata": {
+    "source": "agent-eval/T1",
+    "description": "Multi-step code generation: plan -> code_exec -> review",
+    "category": "regression"
+  },
+  "steps": [
+    {
+      "id": "plan",
+      "name": "Generate implementation plan",
+      "type": "llm_call",
+      "config": {
+        "prompt": "Plan a todo API implementation in Python Flask",
+        "max_tokens": 256
+      }
+    },
+    {
+      "id": "implement",
+      "name": "Generate code via sandbox",
+      "type": "tool_call",
+      "tool": "code_exec",
+      "depends_on": ["plan"],
+      "config": {
+        "language": "python",
+        "code": "print('{\"status\": \"implemented\"}')"
+      }
+    },
+    {
+      "id": "review",
+      "name": "Review implementation quality",
+      "type": "llm_call",
+      "depends_on": ["implement"],
+      "config": {
+        "prompt": "Review the generated code for correctness",
+        "max_tokens": 128
+      }
+    }
+  ]
+}
