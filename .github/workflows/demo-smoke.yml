@@ -30,10 +30,34 @@ jobs:
       - name: Build server
         run: go build -o bin/agent-exec-engine ./cmd/server
 
+      - name: Start mock LLM gateway
+        run: |
+          python3 ./scripts/mock-llm-gateway.py --host 127.0.0.1 --port 8081 &
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8081/health >/dev/null; then
+              echo "mock llm gateway ready"
+              exit 0
+            fi
+            sleep 0.25
+          done
+          echo "mock llm gateway failed to start" >&2
+          exit 1
+
       - name: Start server
         run: |
-          REDIS_URL=redis://localhost:6379 ./bin/agent-exec-engine &
-          sleep 3
+          REDIS_URL=redis://127.0.0.1:6379 \
+          AI_INFRA_GATEWAY_URL=http://127.0.0.1:8081 \
+          LLM_BASE_URL=http://127.0.0.1:8081/v1 \
+          ./bin/agent-exec-engine &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/healthz >/dev/null; then
+              echo "agent-exec-engine ready"
+              exit 0
+            fi
+            sleep 0.5
+          done
+          echo "agent-exec-engine failed to start" >&2
+          exit 1
 
       - name: Run demo workflow smoke
         run: bash ./scripts/run_demo_workflow.sh

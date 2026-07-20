@@ -135,7 +135,10 @@ func TestReActExecutor_ToolCallThenFinish(t *testing.T) {
 	}
 
 	// Verify first step used web_search
-	step1 := trajectory[0].(map[string]any)
+	step1, ok := trajectory[0].(map[string]any)
+	if !ok {
+		t.Fatalf("trajectory[0] type = %T, want map[string]any", trajectory[0])
+	}
 	if step1["action"] != "web_search" {
 		t.Errorf("step 1 action = %v, want web_search", step1["action"])
 	}

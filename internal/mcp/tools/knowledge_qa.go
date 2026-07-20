@@ -14,9 +14,9 @@ import (
 )
 
 const (
-	qaTimeout       = 15 * time.Second
-	defaultQADepth  = 3
-	defaultQAModel  = "default"
+	qaTimeout      = 15 * time.Second
+	defaultQADepth = 3
+	defaultQAModel = "default"
 )
 
 // KnowledgeQATool calls a RAG service's /v1/qa/ask endpoint and returns
@@ -46,10 +46,10 @@ func (t *KnowledgeQATool) Definition() types.ToolDefinition {
 		InputSchema: types.ToolSchema{
 			Type: "object",
 			Properties: map[string]types.Property{
-				"question":  {Type: "string", Description: "The question to ask the knowledge base"},
-				"depth":     {Type: "integer", Description: "Retrieval depth: number of documents to consider (default: 3)"},
-				"model":     {Type: "string", Description: "RAG model to use (default: 'default')"},
-				"dataset":   {Type: "string", Description: "Dataset name to query (default: service default)"},
+				"question": {Type: "string", Description: "The question to ask the knowledge base"},
+				"depth":    {Type: "integer", Description: "Retrieval depth: number of documents to consider (default: 3)"},
+				"model":    {Type: "string", Description: "RAG model to use (default: 'default')"},
+				"dataset":  {Type: "string", Description: "Dataset name to query (default: service default)"},
 			},
 			Required: []string{"question"},
 		},
@@ -116,17 +116,12 @@ func (t *KnowledgeQATool) Handle(ctx context.Context, input map[string]any) (str
 	}
 
 	var qaResp qaResponse
-	if err := json.Unmarshal(body, &qaResp); err != nil {
+	if err = json.Unmarshal(body, &qaResp); err != nil {
 		return "", fmt.Errorf("decode QA response: %w", err)
 	}
 
 	// Build structured output with audit_id for traceability.
-	output := qaOutput{
-		Answer:    qaResp.Answer,
-		AuditID:   qaResp.AuditID,
-		Sources:   qaResp.Sources,
-		Confidence: qaResp.Confidence,
-	}
+	output := qaOutput(qaResp)
 
 	outputBytes, err := json.MarshalIndent(output, "", "  ")
 	if err != nil {
